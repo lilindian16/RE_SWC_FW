@@ -4,7 +4,7 @@
  * Control car stereos with KEY input using a rotary encoder
  *
  * MCU: ATtiny414
- * F_CPU: 32kHz
+ * F_CPU: 20MHz but we will use the 32kHz low power internal clock
  *
  * Pinout:
  * PA1 -> TXD (OUT)
@@ -22,10 +22,6 @@
  *
  * Note: Any floating input pins must be pulled-up / down to avoid extra power draw in sleep mode
  *
- * TODO:
- * Double press encoder switch to activate programming mode
- * Hold the SWC output longer
- * Improve input to SWC output UX
  */
 
 #include <avr/interrupt.h>

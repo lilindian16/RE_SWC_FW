@@ -56,7 +56,7 @@ volatile int8_t encoder_count = 0;
 /* Byte to store flags for encoder events. Updated in ISR so must be volatile */
 volatile uint8_t encoder_flags = 0;
 
-inline void start_button_timer(void) {
+static inline void start_button_timer(void) {
     /* Make sure the clock is disabled before configuring it */
     TCB0_CTRLA = 0x00;
     /* Set the timer mode */

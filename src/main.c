@@ -93,12 +93,13 @@ ISR(PORTA_PORT_vect) {
     PORTA.INTFLAGS = PIN2_bm;
 
     if (!(encoder_flags & ENCODER_FLAG_BUTTON_TIMER_STARTED_BM)) {
-        encoder_flags |= ENCODER_FLAG_BUTTON_TIMER_STARTED_BM; // Set the timer started flag
+        /* Set the timer started flag */
+        encoder_flags |= ENCODER_FLAG_BUTTON_TIMER_STARTED_BM;
         start_button_timer();
         return;
     }
     /* If we have reached here, we have pressed the button again before the timer finished */
-    /* Disable the timer and set the flag */
+    /* Disable the timer and set the button double press flag */
     TCB0_CTRLA = 0x00;
     encoder_flags &= ~(ENCODER_FLAG_BUTTON_TIMER_STARTED_BM);     // Clear the timer started flag
     encoder_flags |= ENCODER_FLAG_ENCODER_BUTTON_DOUBLE_PRESS_BM; // Set the double pressed flag
@@ -109,8 +110,8 @@ ISR(PORTA_PORT_vect) {
 ISR(PORTB_PORT_vect) {
     /* Encoder A triggered interrupt */
     PORTB.INTFLAGS = PIN2_bm; // Clear the interrupt flag
-    if (PORTA_IN & PIN6_bm)   // We now need to check encoder B state on Port A
-    {
+    /* We now need to check encoder B state on Port A */
+    if (PORTA_IN & PIN6_bm) {
         /* We have a CCW rotation */
         if (encoder_count < MAX_ENCODER_COUNT) {
             encoder_count += 1;
@@ -126,32 +127,25 @@ ISR(PORTB_PORT_vect) {
 int main(void) {
     /* Disable CLKOUT. Set clock src to internal 32kHz */
     _PROTECTED_WRITE(CLKCTRL_MCLKCTRLA, CLKCTRL_CLKSEL_OSCULP32K_gc);
-
     /* Disable prescaler. F_CPU = 32kHZ */
     _PROTECTED_WRITE(CLKCTRL_MCLKCTRLB, 0x00);
-
     /* Set output direction for Port A. All others will be input */
     PORTA.DIR = (PIN1_bm | PIN3_bm | PIN4_bm | PIN5_bm | PIN7_bm);
     /* Set output direction for Port B. All others will be input */
     PORTB.DIR = (PIN0_bm | PIN1_bm);
-
     /* Set encoder switch input PU with falling edge ISR */
     PORTA.PIN2CTRL = PORT_PULLUPEN_bm | PORT_ISC_FALLING_gc; // Encoder SW 1
-
     /* Set encoder A input PU */
     PORTB.PIN2CTRL = PORT_PULLUPEN_bm; // Encoder A in
     /* Allow the filter cap to charge before enabling ISR to avoid early trigger */
     _delay_ms(100);
     /* Enable ISR for encoder A */
     PORTB.PIN2CTRL |= PORT_ISC_FALLING_gc;
-
     /* Set encoder B input PU no ISR */
     PORTA.PIN6CTRL = PORT_PULLUPEN_bm; // Encoder B in
-
     /* Set RXD input PU to avoid floating */
     PORTB.PIN3CTRL = PORT_PULLUPEN_bm;
-
-    /* Pulse the activity LED so we know we are up and running */
+    /* Pulse the activity LED so we know we are up and running :) */
     for (uint8_t i = 0; i < 2; i++) {
         PORTA.OUTSET = PIN4_bm; // Turn on LED
         _delay_ms(100);
@@ -159,9 +153,11 @@ int main(void) {
         _delay_ms(100);
     }
 
-    sei(); // Global interrupt enable
+    /* Enable all interrupts */
+    sei();
 
     while (1) {
+        /* Check if we have any input events */
         while (encoder_count || encoder_flags) {
             if (encoder_count != 0) {
                 PORTA.OUTSET = PIN4_bm; // Turn on LED

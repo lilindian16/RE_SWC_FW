@@ -34,13 +34,11 @@
 #endif
 #include <util/delay.h>
 
+/* Include the headunit configs */
+#include "headunit_configs.h"
+
 /* Amount of ticks required for the button press timer */
 #define BUTTON_TIMER_TICKS_COUNT 8000
-
-/* Delay lengths in ms for SWC outputs */
-#define SWC_OUTPUT_ENABLE_SHORT_HOLD_MS 80   // Time required for radio to read signal
-#define SWC_OUTPUT_ENABLE_LONG_HOLD_MS  4000 // Time required for radio to read claibration signal
-#define SWC_OUTPUT_DISABLE_MS           20   // Time required until we send another signal
 
 /* Ceiling and floor for encoder rotation counts */
 #define MIN_ENCODER_COUNT -2
@@ -50,6 +48,11 @@
 #define ENCODER_FLAG_ENCODER_BUTTON_SINGLE_PRESS_BM 0x01
 #define ENCODER_FLAG_ENCODER_BUTTON_DOUBLE_PRESS_BM 0x02
 #define ENCODER_FLAG_BUTTON_TIMER_STARTED_BM        0x04
+
+#if !defined(SWC_OUTPUT_DISABLE_MS) || !defined(SWC_OUTPUT_ENABLE_SHORT_HOLD_MS)                                       \
+    || !defined(SWC_OUTPUT_ENABLE_LONG_HOLD_MS)
+#warning "Not all SWC parameters are defined. Check the headunit_configs.h file"
+#endif
 
 /* Signed byte to store encoder count. Will be updated in ISR so must be volatile */
 volatile int8_t encoder_count = 0;

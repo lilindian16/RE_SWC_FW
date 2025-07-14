@@ -92,14 +92,16 @@ ISR(PORTA_PORT_vect) {
     /* Cear the interrupt flag. The only input to trigger ISR is the encoder switch */
     PORTA.INTFLAGS = PIN2_bm;
 
+    /* Check if the button press timer has been started */
     if (!(encoder_flags & ENCODER_FLAG_BUTTON_TIMER_STARTED_BM)) {
-        /* Set the timer started flag */
+        /* Timer not started, this is the first button press. Set the timer started
+        flag and start the timer */
         encoder_flags |= ENCODER_FLAG_BUTTON_TIMER_STARTED_BM;
         start_button_timer();
         return;
     }
-    /* If we have reached here, we have pressed the button again before the timer finished */
-    /* Disable the timer and set the button double press flag */
+    /* If we have reached here, we have pressed the button again before the timer finished
+    Disable the timer and set the button double press flag */
     TCB0_CTRLA = 0x00;
     encoder_flags &= ~(ENCODER_FLAG_BUTTON_TIMER_STARTED_BM);     // Clear the timer started flag
     encoder_flags |= ENCODER_FLAG_ENCODER_BUTTON_DOUBLE_PRESS_BM; // Set the double pressed flag

@@ -11,13 +11,13 @@
 
 #if defined(ANDROID_HEADUNIT_GENERIC)
 #define CONFIG_NAME                     "ANDROID_HEADUNIT_GENERIC"
-#define SWC_OUTPUT_ENABLE_SHORT_HOLD_MS 800     
+#define SWC_OUTPUT_ENABLE_SHORT_HOLD_MS 80     
 #define SWC_OUTPUT_ENABLE_LONG_HOLD_MS  4000    
 #define SWC_OUTPUT_DISABLE_MS           20              
 
 #elif defined(SONY_HEADUNIT_GENERIC)
 #define CONFIG_NAME                     "SONY_HEADUNIT_GENERIC"
-#define SWC_OUTPUT_ENABLE_SHORT_HOLD_MS 800     
+#define SWC_OUTPUT_ENABLE_SHORT_HOLD_MS 80   
 #define SWC_OUTPUT_ENABLE_LONG_HOLD_MS  4000    
 #define SWC_OUTPUT_DISABLE_MS           20              
 

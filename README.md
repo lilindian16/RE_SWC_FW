@@ -1,20 +1,32 @@
 # RE_SWC Firmware
 
-This repo contains the Rotary Encoder Steering Wheel Controller firmware.
+This repo contains the Rotary Encoder Steering Wheel Controller firmware
+
+## RE_SWC Functions:
+
+- Volume +/-
+- Button short press action
+- Button long press action
+- Learning mode for stereo activated with button double press
 
 ## Supported Headunits
 
-The RW_SWC should be compatible with any headunit that supports learning mode / reassignment of analog steering wheel control input. The majority of android headunits support this.
+The RW_SWC should be compatible with any headunit that supports learning mode/reassignment of analog steering wheel control input. The majority of android headunits support this.
 
-Some named brand headunits should also be compatible. Check the owner's manual of your headunit to see if it supports learning mode / reassignment of steering wheel control input
+Several named brand headunits should also be compatible. Check the owner's manual of your headunit to see if it supports learning mode/reassignment of steering wheel control input.
 
-## Requirements
+> [!TIP]
+> View the [Compatibility List](https://docs.google.com/spreadsheets/d/1KuhRTHHPlsPpQyRziJOaQv1jJqykjcSSAFU2pcPYcbk/edit?usp=sharing) for the most up-to-date compatibility matrix
+
+## Requirements For FW Dev & Flashing
 
 - PlatformIO - I like running it as an extension in VSCode
-- [JTAG2UPDI programmer](https://github.com/ElTangas/jtag2updi) - you can make one with an Arduino Nano
 - RE_SWC Controller Kit
+- USB C data & power cable
 
-## New Headunits
+The source for this project requires the Atmel megaAVR platformio core but uses only the AVR SDK functionality instead of the Arduino abstraction layer. Platformio handles all the set up. I find this much easier than using proprietary IDEs and configuring build tools etc
+
+## Supporting New Headunits
 
 The firmware for the RE_SWC can be configured as required. Steps to configure a new headunit:
 

@@ -45,9 +45,10 @@
 #define MAX_ENCODER_COUNT 2
 
 /* Encoder state flags */
-#define ENCODER_FLAG_ENCODER_BUTTON_SINGLE_PRESS_BM 0x01
-#define ENCODER_FLAG_ENCODER_BUTTON_DOUBLE_PRESS_BM 0x02
-#define ENCODER_FLAG_BUTTON_TIMER_STARTED_BM        0x04
+#define ENCODER_FLAG_ENCODER_BUTTON_SINGLE_PRESS_BM (1 << 0)
+#define ENCODER_FLAG_ENCODER_BUTTON_DOUBLE_PRESS_BM (1 << 1)
+#define ENCODER_FLAG_ENCODER_BUTTON_HELD_BM         (1 << 2)
+#define ENCODER_FLAG_BUTTON_TIMER_STARTED_BM        (1 << 3)
 
 #if !defined(SWC_OUTPUT_DISABLE_MS) || !defined(SWC_OUTPUT_ENABLE_SHORT_HOLD_MS)                                       \
     || !defined(SWC_OUTPUT_ENABLE_LONG_HOLD_MS)
@@ -84,8 +85,14 @@ ISR(TCB0_INT_vect) {
     TCB0_INTFLAGS = TCB_CAPT_bm;
     /* Clear the flags */
     encoder_flags &= ~(ENCODER_FLAG_BUTTON_TIMER_STARTED_BM);
-    /* The button has been pressed once. Set the flag */
-    encoder_flags |= ENCODER_FLAG_ENCODER_BUTTON_SINGLE_PRESS_BM;
+    /* Check the state of the button input. If it is still high, we have a long press. If not, we have a short press */
+    if (PORTA_IN & PIN2_bm) {
+        /* Button was pressed. Enable button pressed flag */
+        encoder_flags |= ENCODER_FLAG_ENCODER_BUTTON_SINGLE_PRESS_BM;
+    } else {
+        /* The button is still pressed. Enable the button held flag */
+        encoder_flags |= ENCODER_FLAG_ENCODER_BUTTON_HELD_BM;
+    }
 }
 
 ISR(PORTA_PORT_vect) {
@@ -136,9 +143,9 @@ int main(void) {
     /* Set output direction for Port B. All others will be input */
     PORTB.DIR = (PIN0_bm | PIN1_bm);
     /* Set encoder switch input PU with falling edge ISR */
-    PORTA.PIN2CTRL = PORT_PULLUPEN_bm | PORT_ISC_FALLING_gc; // Encoder SW 1
+    PORTA.PIN2CTRL = PORT_PULLUPEN_bm | PORT_ISC_FALLING_gc;
     /* Set encoder A input PU */
-    PORTB.PIN2CTRL = PORT_PULLUPEN_bm; // Encoder A in
+    PORTB.PIN2CTRL = PORT_PULLUPEN_bm;
     /* Allow the filter cap to charge before enabling ISR to avoid early trigger */
     _delay_ms(100);
     /* Enable ISR for encoder A */
@@ -197,14 +204,26 @@ int main(void) {
             if (encoder_flags & ENCODER_FLAG_ENCODER_BUTTON_SINGLE_PRESS_BM) {
                 encoder_flags &= ~(ENCODER_FLAG_ENCODER_BUTTON_SINGLE_PRESS_BM); // Clear the flag
                 PORTA.OUTSET = PIN4_bm;                                          // Turn on LED
-                PORTB.OUTSET = PIN1_bm;
+                PORTB.OUTSET = PIN1_bm;                                          // Enable SWC output
                 if (encoder_flags & ENCODER_FLAG_ENCODER_BUTTON_DOUBLE_PRESS_BM) {
                     encoder_flags &= ~(ENCODER_FLAG_ENCODER_BUTTON_DOUBLE_PRESS_BM);
                     _delay_ms(SWC_OUTPUT_ENABLE_LONG_HOLD_MS);
                 } else {
                     _delay_ms(SWC_OUTPUT_ENABLE_SHORT_HOLD_MS);
                 }
-                PORTB.OUTCLR = PIN1_bm;
+                PORTB.OUTCLR = PIN1_bm; // Disable SWC output
+                _delay_ms(SWC_OUTPUT_DISABLE_MS);
+                PORTA.OUTCLR = PIN4_bm; // Turn off LED
+            }
+
+            if (encoder_flags & ENCODER_FLAG_ENCODER_BUTTON_HELD_BM) {
+                encoder_flags &= ~(ENCODER_FLAG_ENCODER_BUTTON_HELD_BM); // Clear the flag
+                PORTA.OUTSET = PIN4_bm;                                  // Turn on LED
+                PORTB.OUTSET = PIN1_bm;                                  // Enable SWC output
+                while (!(PORTA_IN & PIN2_bm)) {
+                    _delay_ms(10);
+                }
+                PORTB.OUTCLR = PIN1_bm; // Disable SWC output
                 _delay_ms(SWC_OUTPUT_DISABLE_MS);
                 PORTA.OUTCLR = PIN4_bm; // Turn off LED
             }

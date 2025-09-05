@@ -1,18 +1,16 @@
+/**
+ * JVC steering wheel control interface
+ * Refer to img/ folder for logic analyser captures showing
+ * how this protocol was reverse engineered
+ */
+
 #include "jvc_headunit.h"
+
 #include <avr/io.h>
 #include <util/delay.h>
 
-/**
- * JVC uses a modified NEC IR protocol
- * Params:
- * * Pulse resolution: 500uS
- * * Data length: 7-bit
- * * Packet: AGC Pulse : AGC Long Pause : 1 start bit : 7 bit address : 7 bit command : 2 stop bits
- *
- */
-
 /* Define the tick resolution in micro-seconds. This is the time required for a single bit of data .. hard to explain,
- * easier to show in a diagram */
+ * easier to show in the logic analyser captures */
 #define JVC_TICK_RESOLUTION_uS            530
 #define JVC_DATA_LENGTH_BITS              7
 #define JVC_PREAMBLE_AGC_PULSE_LENGTH_mS  9
@@ -25,10 +23,14 @@
 #define JVC_MESSAGE_REPEAT_DELAY_mS       9
 #define JVC_MESSAGE_DELAY_mS              175
 
-#define JVC_VOLUME_UP_COMMAND   0x04
-#define JVC_VOLUME_DOWN_COMMAND 0x05
-#define JVC_MUTE_COMMAND        0x0E
-#define JVC_COMMAND_UNKNOWN     0xFF
+enum JVC_SWC_Command {
+    JVC_VOLUME_UP_COMMAND = 0x04,
+    JVC_VOLUME_DOWN_COMMAND = 0x05,
+    JVC_MUTE_COMMAND = 0x0E,
+    JVC_NEXT_TRACK = 0x12,
+    JVC_PREVIOUS_TRACK = 0x13,
+    JVC_COMMAND_UNKNOWN = 0xFF
+};
 
 /* Global variables */
 static uint8_t previous_command = JVC_COMMAND_UNKNOWN;
@@ -100,6 +102,14 @@ void jvc_volume_down(void) {
     jvc_output_swc(JVC_VOLUME_DOWN_COMMAND);
 }
 
-void jvc_mute(void) {
+void jvc_on_button_short_press(void) {
     jvc_output_swc(JVC_MUTE_COMMAND);
+}
+
+void jvc_on_button_double_press(void) {
+    jvc_output_swc(JVC_NEXT_TRACK);
+}
+
+void jvc_on_button_held(void) {
+    jvc_output_swc(JVC_PREVIOUS_TRACK);
 }

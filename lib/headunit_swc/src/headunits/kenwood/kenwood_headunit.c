@@ -1,10 +1,18 @@
+/**
+ * Kenwood steering wheel control interface
+ * Refer to img/ folder for logic analyser captures showing
+ * how this protocol was reverse engineered
+ */
+
 #include "kenwood_headunit.h"
 
 #include <avr/io.h>
 #include <stdint.h>
 #include <util/delay.h>
 
-#define KENWOOD_DATA_LENGTH_BITS                 8
+#define KENWOOD_DATA_LENGTH_BITS 8
+/* Define the tick resolution in micro-seconds. This is the time required for a single bit of data .. hard to explain,
+ * easier to show in the logic analyser captures */
 #define KENWOOD_TICK_RESOLUTION_uS               530
 #define KENWOOD_SHORT_PULSE                      KENWOOD_TICK_RESOLUTION_uS
 #define KENWOOD_LONG_PULSE                       (KENWOOD_TICK_RESOLUTION_uS * 3)
@@ -16,10 +24,12 @@
 #define KENWOOD_ADDRESS_INVERTED 0x46
 
 enum Kenwood_SWC_Command {
-    PLAY_PAUSE = 0x06,
-    VOLUME_UP = 0x14,
-    VOLUME_DOWN = 0x15,
-    MUTE = 0x16,
+    KENWOOD_PREVIOUS_TRACK = 0x0A,
+    KENWOOD_NEXT_TRACK = 0x0B,
+    KENWOOD_PLAY_PAUSE = 0x0E,
+    KENWOOD_VOLUME_UP = 0x14,
+    KENWOOD_VOLUME_DOWN = 0x15,
+    KENWOOD_MUTE = 0x16,
 };
 
 static void kenwood_binary_one(void) {
@@ -67,17 +77,21 @@ void kenwood_output_swc(uint8_t command) {
 }
 
 void kenwood_volume_up(void) {
-    kenwood_output_swc(VOLUME_UP);
+    kenwood_output_swc(KENWOOD_VOLUME_UP);
 }
 
 void kenwood_volume_down(void) {
-    kenwood_output_swc(VOLUME_DOWN);
+    kenwood_output_swc(KENWOOD_VOLUME_DOWN);
 }
 
-void kenwood_mute(void) {
-    kenwood_output_swc(MUTE);
+void kenwood_on_button_short_press(void) {
+    kenwood_output_swc(KENWOOD_PLAY_PAUSE);
 }
 
-void kenwood_play_pause(void) {
-    kenwood_output_swc(PLAY_PAUSE);
+void kenwood_on_button_double_press(void) {
+    kenwood_output_swc(KENWOOD_NEXT_TRACK);
+}
+
+void kenwood_on_button_held(void) {
+    kenwood_output_swc(KENWOOD_MUTE);
 }

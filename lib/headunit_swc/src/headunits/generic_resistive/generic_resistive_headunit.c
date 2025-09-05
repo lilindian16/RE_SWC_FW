@@ -49,7 +49,7 @@ void generic_resistive_headunit_button_held(bool hold_output) {
     _delay_ms(SWC_OUTPUT_DISABLE_mS);
 }
 
-void generic_resistive_headunit_button_double_pressed(bool hold_output) {
+void generic_resistive_headunit_button_double_press(bool hold_output) {
     /* For now, all we do is flash the LED while we are in learning mode */
     for (uint8_t i = 0; i < 2; i++) {
         PORTA.OUTSET = PIN4_bm;

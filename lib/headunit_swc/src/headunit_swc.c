@@ -47,10 +47,10 @@ void headunit_button_short_press(bool hold_output) {
             generic_resistive_headunit_button_short_press(hold_output);
             break;
         case HEADUNIT_JVC:
-            jvc_mute();
+            jvc_on_button_short_press();
             break;
         case HEADUNIT_KENWOOD:
-            kenwood_play_pause();
+            kenwood_on_button_short_press();
             break;
         default:
             break;
@@ -63,9 +63,10 @@ void headunit_button_held(bool hold_output) {
             generic_resistive_headunit_button_held(hold_output);
             break;
         case HEADUNIT_JVC:
+            jvc_on_button_held();
             break;
         case HEADUNIT_KENWOOD:
-            kenwood_mute();
+            kenwood_on_button_held();
             break;
         default:
             break;
@@ -75,12 +76,13 @@ void headunit_button_held(bool hold_output) {
 void headunit_button_double_pressed(bool hold_output) {
     switch (*current_headunit_brand) {
         case HEADUNIT_GENERIC_RESISTIVE:
-            generic_resistive_headunit_button_double_pressed(hold_output);
+            generic_resistive_headunit_button_double_press(hold_output);
             break;
         case HEADUNIT_JVC:
+            jvc_on_button_double_press();
             break;
         case HEADUNIT_KENWOOD:
-            break;
+            kenwood_on_button_double_press();
         default:
             break;
     }

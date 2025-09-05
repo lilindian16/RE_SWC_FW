@@ -10,7 +10,7 @@ Several named brand headunits should also be compatible. Check the owner's manua
 
 ### Update - Firmware Version 2.0.0
 
-FW version 2.0.0 makes the RE_SWC compatible with every JVC and Kenwood headunit. SWC is achieved with the blue and yellow stripe SWC input wire on the headunit.
+FW version 2.0.0 makes the RE_SWC compatible with (most likely) every JVC and Kenwood headunit. SWC is achieved with the blue and yellow stripe SWC input wire on the headunit.
 
 > [!TIP]
 > View the [Compatibility List](https://docs.google.com/spreadsheets/d/1KuhRTHHPlsPpQyRziJOaQv1jJqykjcSSAFU2pcPYcbk/edit?usp=sharing) for the most up-to-date compatibility matrix

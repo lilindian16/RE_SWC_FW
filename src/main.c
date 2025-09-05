@@ -24,25 +24,23 @@
  *
  */
 
+#include <avr/eeprom.h>
 #include <avr/interrupt.h>
 #include <avr/io.h>
 #include <avr/sleep.h>
-/* We must over-write F_CPU with our required F_CPU before including delay src */
-#ifdef F_CPU
-#undef F_CPU
-#define F_CPU 32000L
-#endif
 #include <util/delay.h>
 
 /* Include the headunit configs */
-#include "headunit_configs.h"
+#include <headunit_swc.h>
 
 /* Amount of ticks required for the button press timer */
-#define BUTTON_TIMER_TICKS_COUNT 8000
+#define BUTTON_TIMER_PERIOD_mS 500
+#define BUTTON_TIMER_PRESCALER 2
+#define TIMER_TICKS_PER_mS     (F_CPU / BUTTON_TIMER_PRESCALER / 1000)
 
 /* Ceiling and floor for encoder rotation counts */
-#define MIN_ENCODER_COUNT -2
-#define MAX_ENCODER_COUNT 2
+#define MIN_ENCODER_COUNT -1
+#define MAX_ENCODER_COUNT 1
 
 /* Encoder state flags */
 #define ENCODER_FLAG_ENCODER_BUTTON_SINGLE_PRESS_BM (1 << 0)
@@ -50,15 +48,40 @@
 #define ENCODER_FLAG_ENCODER_BUTTON_HELD_BM         (1 << 2)
 #define ENCODER_FLAG_BUTTON_TIMER_STARTED_BM        (1 << 3)
 
-#if !defined(SWC_OUTPUT_DISABLE_MS) || !defined(SWC_OUTPUT_ENABLE_SHORT_HOLD_MS)                                       \
-    || !defined(SWC_OUTPUT_ENABLE_LONG_HOLD_MS)
-#warning "Not all SWC parameters are defined. Check the headunit_configs.h file"
+#define EEPROM_START_ADDRESS          0x00
+#define EEPROM_HEADUNIT_BRAND_ADDRESS 0x04
+
+/**
+ *  We need to define our own eeprom_is_ready and eeprom_busy_wait functions since the toolchain defined these incorrect
+ * :(
+ */
+#ifdef eeprom_is_ready
+#undef eeprom_is_ready
+#define eeprom_is_ready() bit_is_clear(NVMCTRL_STATUS, NVMCTRL_EEBUSY_bm)
 #endif
+#ifdef eeprom_busy_wait
+#undef eeprom_busy_wait
+#define eeprom_busy_wait()                                                                                             \
+    do {                                                                                                               \
+    } while (!eeprom_is_ready())
+#endif
+
+typedef enum { PROGRAM_STATE_CHANGING_HEADUNIT_BRAND, PRORGAM_STATE_NORMAL } Program_State_t;
+
+/* Create the program state machine and default to normal */
+Program_State_t current_program_state = PRORGAM_STATE_NORMAL;
+
+/* Set the HU brand as GENERIC to begin with. It may be overwritten by EEPROM settings */
+static Headunit_Brand_t current_headunit_brand = HEADUNIT_GENERIC_RESISTIVE;
 
 /* Signed byte to store encoder count. Will be updated in ISR so must be volatile */
 volatile int8_t encoder_count = 0;
+
 /* Byte to store flags for encoder events. Updated in ISR so must be volatile */
 volatile uint8_t encoder_flags = 0;
+
+/* Create a tick int so we can increment the amount of ms a timer has been running for */
+volatile int timer_ms_ticks = 0;
 
 static inline void start_button_timer(void) {
     /* Make sure the clock is disabled before configuring it */
@@ -70,29 +93,49 @@ static inline void start_button_timer(void) {
     /* Set the prescaler to div 2 */
     TCB0_CTRLA = TCB_CLKSEL_CLKDIV2_gc;
     /* Set the CCMP value (TOP) */
-    /* We want the timer to trigger event after 500ms. @16kHz, 500ms would result in 8,000 ticks */
-    TCB0_CCMP = BUTTON_TIMER_TICKS_COUNT;
+    TCB0_CCMP = TIMER_TICKS_PER_mS;
     /* Enable the interrupt */
     TCB0_INTCTRL = TCB_CAPT_bm;
-    /* Set the clock freq -> div 2 = 500hz & enable timer to run */
+    /* Set the clock freq -> div 2 & enable timer to run */
     TCB0_CTRLA |= TCB_ENABLE_bm;
 }
 
 ISR(TCB0_INT_vect) {
-    /* If this ISR is called, the button was pressed and the timer completed without it
-    being pressed again */
     /* Clear the ISR */
     TCB0_INTFLAGS = TCB_CAPT_bm;
-    /* Clear the flags */
-    encoder_flags &= ~(ENCODER_FLAG_BUTTON_TIMER_STARTED_BM);
-    /* Check the state of the button input. If it is still high, we have a long press. If not, we have a short press */
-    if (PORTA_IN & PIN2_bm) {
-        /* Button was pressed. Enable button pressed flag */
-        encoder_flags |= ENCODER_FLAG_ENCODER_BUTTON_SINGLE_PRESS_BM;
-    } else {
-        /* The button is still pressed. Enable the button held flag */
-        encoder_flags |= ENCODER_FLAG_ENCODER_BUTTON_HELD_BM;
+
+    /* Get the current value of ticks - this is volatile so disable interrupts */
+    cli();
+    timer_ms_ticks++;
+    int ticks = timer_ms_ticks;
+    sei();
+
+    if (ticks >= BUTTON_TIMER_PERIOD_mS) {
+        /* Clear the flags */
+        encoder_flags &= ~(ENCODER_FLAG_BUTTON_TIMER_STARTED_BM);
+
+        /* Reset the timer ticks */
+        cli();
+        timer_ms_ticks = 0;
+        sei();
+
+        /* Check the state of the button input. If it is still high, we have a long press. If not, we have a
+         * short press */
+        if (PORTA_IN & PIN2_bm) {
+            /* Button was pressed and is now released. Enable button pressed flag */
+            encoder_flags |= ENCODER_FLAG_ENCODER_BUTTON_SINGLE_PRESS_BM;
+        }
+
+        else {
+            /* The button is still pressed. Enable the button held flag */
+            encoder_flags |= ENCODER_FLAG_ENCODER_BUTTON_HELD_BM;
+        }
+        return;
     }
+
+    /* If we reach here, we have not reached the timeout so restart the timer :) */
+    TCB0_CNT = 0;
+    TCB0_CTRLA |= TCB_ENABLE_bm;
 }
 
 ISR(PORTA_PORT_vect) {
@@ -122,22 +165,41 @@ ISR(PORTB_PORT_vect) {
     /* We now need to check encoder B state on Port A */
     if (PORTA_IN & PIN6_bm) {
         /* We have a CCW rotation */
-        if (encoder_count < MAX_ENCODER_COUNT) {
-            encoder_count += 1;
+        if (encoder_count > MIN_ENCODER_COUNT) {
+            encoder_count -= 1;
         }
         return;
     }
     /* We have a CW rotation */
-    if (encoder_count > MIN_ENCODER_COUNT) {
-        encoder_count -= 1;
+    if (encoder_count < MAX_ENCODER_COUNT) {
+        encoder_count += 1;
     }
 }
 
 int main(void) {
-    /* Disable CLKOUT. Set clock src to internal 32kHz */
-    _PROTECTED_WRITE(CLKCTRL_MCLKCTRLA, CLKCTRL_CLKSEL_OSCULP32K_gc);
-    /* Disable prescaler. F_CPU = 32kHZ */
-    _PROTECTED_WRITE(CLKCTRL_MCLKCTRLB, 0x00);
+    /* Disable CLKOUT. Set clock src to internal 20MHz */
+    _PROTECTED_WRITE(CLKCTRL_MCLKCTRLA, CLKCTRL_CLKSEL_OSC20M_gc);
+    /* Enable prescaler with 10x div. F_CPU = 2MHz */
+    _PROTECTED_WRITE(CLKCTRL_MCLKCTRLB, (0x01 | CLKCTRL_PDIV_10X_gc));
+
+    /* Read the EEPROM to see if we have ever used it */
+    eeprom_busy_wait();
+    uint32_t eeprom_header = eeprom_read_dword((uint32_t*)EEPROM_START_ADDRESS);
+    if (eeprom_header != 0xDEADBEEF) {
+        eeprom_busy_wait();
+        eeprom_update_dword((uint32_t*)EEPROM_START_ADDRESS, 0xDEADBEEF);
+        eeprom_busy_wait();
+        eeprom_update_byte((uint8_t*)EEPROM_HEADUNIT_BRAND_ADDRESS, (uint8_t)HEADUNIT_GENERIC_RESISTIVE); // Default to
+                                                                                                          // resistive
+                                                                                                          // HU
+        current_headunit_brand = HEADUNIT_GENERIC_RESISTIVE;
+    }
+
+    else {
+        eeprom_busy_wait();
+        current_headunit_brand = (Headunit_Brand_t)eeprom_read_byte((uint8_t*)EEPROM_HEADUNIT_BRAND_ADDRESS);
+    }
+
     /* Set output direction for Port A. All others will be input */
     PORTA.DIR = (PIN1_bm | PIN3_bm | PIN4_bm | PIN5_bm | PIN7_bm);
     /* Set output direction for Port B. All others will be input */
@@ -154,16 +216,84 @@ int main(void) {
     PORTA.PIN6CTRL = PORT_PULLUPEN_bm; // Encoder B in
     /* Set RXD input PU to avoid floating */
     PORTB.PIN3CTRL = PORT_PULLUPEN_bm;
-    /* Pulse the activity LED so we know we are up and running :) */
-    for (uint8_t i = 0; i < 2; i++) {
+
+    uint8_t count = 0;
+    while (!(PORTA_IN & PIN2_bm) && count < 5) {
+        _delay_ms(1000);
+        count++;
+    }
+
+    if (count == 5) {
+        current_program_state = PROGRAM_STATE_CHANGING_HEADUNIT_BRAND;
+        /* Pulse the LED while the button is still being held */
+        while (!(PORTA_IN & PIN2_bm)) {
+            PORTA.OUTSET = PIN4_bm; // Turn on LED
+            _delay_ms(100);
+            PORTA.OUTCLR = PIN4_bm; // Turn off LED
+            _delay_ms(100);
+        }
+
+        /* Enable all interrupts so we can capture button inputs asynchronously */
+        sei();
+
+        /* Reset to the starting value */
+        current_headunit_brand = HEADUNIT_BRAND_UNKNOWN;
+
+        /* Wait until the user has held the button to confirm their input */
+        while (!(encoder_flags & ENCODER_FLAG_ENCODER_BUTTON_HELD_BM)) {
+            /* Flash the LED each time the button is pressed to show the increment of the counter */
+            if (encoder_flags & ENCODER_FLAG_ENCODER_BUTTON_SINGLE_PRESS_BM) {
+                encoder_flags &= ~(ENCODER_FLAG_ENCODER_BUTTON_SINGLE_PRESS_BM); // Clear the flag
+                /* Increment the current headunit index if we are within the bounds */
+                if (current_headunit_brand != HEADUNIT_BRAND_ERROR) {
+                    current_headunit_brand = (Headunit_Brand_t)((uint8_t)current_headunit_brand + 1);
+                }
+                PORTA.OUTSET = PIN4_bm; // Turn on LED
+                _delay_ms(100);
+                PORTA.OUTCLR = PIN4_bm; // Turn off LED
+                _delay_ms(100);
+            };
+        }
+
+        /* We reach here after holding the button to confirm our entry */
+        encoder_flags &= ~(ENCODER_FLAG_ENCODER_BUTTON_HELD_BM); // Clear the flag
+        /* We keep the LED on while the user has the button held. Turn it off when released */
+        while (!(PORTA_IN & PIN2_bm)) {
+            PORTA.OUTSET = PIN4_bm;
+        }
+        PORTA.OUTCLR = PIN4_bm; // Turn off LED
+
+        /* Write the headunit brand enum to EEPROM */
+        eeprom_busy_wait();
+        eeprom_update_byte((uint8_t*)EEPROM_HEADUNIT_BRAND_ADDRESS, (uint8_t)current_headunit_brand);
+        _delay_ms(2500);
+    }
+
+    /* We didn't enter config mode so wait to show the LED */
+    else {
+        _delay_ms(500);
+    }
+
+    /* Default back to the base HU if there is an error when retrieving the HU brand saved */
+    if (current_headunit_brand == HEADUNIT_BRAND_UNKNOWN || current_headunit_brand == HEADUNIT_BRAND_ERROR) {
+        current_headunit_brand = HEADUNIT_GENERIC_RESISTIVE;
+    }
+
+    /* Pulse the LED x number of times to show index of current headunit selected */
+    for (uint8_t i = 0; i < (uint8_t)current_headunit_brand; i++) {
         PORTA.OUTSET = PIN4_bm; // Turn on LED
         _delay_ms(100);
         PORTA.OUTCLR = PIN4_bm; // Turn off LED
         _delay_ms(100);
     }
 
-    /* Enable all interrupts */
+    init_headunit_swc(&current_headunit_brand);
+
+    /* Make sure all interrupts are enabled */
     sei();
+
+    /* Reset all the encoder flags to avoid any errors */
+    encoder_flags = 0;
 
     while (1) {
         /* Check if we have any input events */
@@ -173,67 +303,49 @@ int main(void) {
                 if (encoder_count > 0) {
                     /* SWC OUT 1 to increase the volume */
                     encoder_count--;
-                    PORTA.OUTSET = PIN7_bm;
                     if (encoder_flags & ENCODER_FLAG_ENCODER_BUTTON_DOUBLE_PRESS_BM) {
                         encoder_flags &= ~(ENCODER_FLAG_ENCODER_BUTTON_DOUBLE_PRESS_BM); // Clear the flag
-                        _delay_ms(SWC_OUTPUT_ENABLE_LONG_HOLD_MS);
-                        encoder_count = 0;
+                        headunit_volume_up(true);
                     } else {
-                        _delay_ms(SWC_OUTPUT_ENABLE_SHORT_HOLD_MS);
+                        headunit_volume_up(false);
                     }
-                    PORTA.OUTCLR = PIN7_bm;
-                    _delay_ms(SWC_OUTPUT_DISABLE_MS);
                 }
 
                 else {
                     /* SWC OUT 2 to decrease the volume */
                     encoder_count++;
-                    PORTB.OUTSET = PIN0_bm;
                     if (encoder_flags & ENCODER_FLAG_ENCODER_BUTTON_DOUBLE_PRESS_BM) {
                         encoder_flags &= ~(ENCODER_FLAG_ENCODER_BUTTON_DOUBLE_PRESS_BM); // Clear the flag
-                        _delay_ms(SWC_OUTPUT_ENABLE_LONG_HOLD_MS);
-                        encoder_count = 0;
+                        headunit_volume_down(true);
                     } else {
-                        _delay_ms(SWC_OUTPUT_ENABLE_SHORT_HOLD_MS);
+                        headunit_volume_down(false);
                     }
-                    PORTB.OUTCLR = PIN0_bm;
-                    _delay_ms(SWC_OUTPUT_DISABLE_MS);
                 }
                 PORTA.OUTCLR = PIN4_bm; // Turn off LED
             }
             if (encoder_flags & ENCODER_FLAG_ENCODER_BUTTON_SINGLE_PRESS_BM) {
                 encoder_flags &= ~(ENCODER_FLAG_ENCODER_BUTTON_SINGLE_PRESS_BM); // Clear the flag
                 PORTA.OUTSET = PIN4_bm;                                          // Turn on LED
-                PORTB.OUTSET = PIN1_bm;                                          // Enable SWC output
                 if (encoder_flags & ENCODER_FLAG_ENCODER_BUTTON_DOUBLE_PRESS_BM) {
                     encoder_flags &= ~(ENCODER_FLAG_ENCODER_BUTTON_DOUBLE_PRESS_BM);
-                    _delay_ms(SWC_OUTPUT_ENABLE_LONG_HOLD_MS);
+                    headunit_button_short_press(true);
                 } else {
-                    _delay_ms(SWC_OUTPUT_ENABLE_SHORT_HOLD_MS);
+                    headunit_button_short_press(false);
                 }
-                PORTB.OUTCLR = PIN1_bm; // Disable SWC output
-                _delay_ms(SWC_OUTPUT_DISABLE_MS);
                 PORTA.OUTCLR = PIN4_bm; // Turn off LED
             }
 
             if (encoder_flags & ENCODER_FLAG_ENCODER_BUTTON_HELD_BM) {
                 encoder_flags &= ~(ENCODER_FLAG_ENCODER_BUTTON_HELD_BM); // Clear the flag
                 PORTA.OUTSET = PIN4_bm;                                  // Turn on LED
-                PORTB.OUTSET = PIN1_bm;                                  // Enable SWC output
-                while (!(PORTA_IN & PIN2_bm)) {
-                    _delay_ms(10);
-                }
-                PORTB.OUTCLR = PIN1_bm; // Disable SWC output
-                _delay_ms(SWC_OUTPUT_DISABLE_MS);
+                headunit_button_held(false);
                 PORTA.OUTCLR = PIN4_bm; // Turn off LED
             }
 
             if (encoder_flags & ENCODER_FLAG_ENCODER_BUTTON_DOUBLE_PRESS_BM) {
-                for (uint8_t i = 0; i < 2; i++) {
-                    PORTA.OUTSET = PIN4_bm;
-                    _delay_ms(50);
-                    PORTA_OUTCLR = PIN4_bm;
-                    _delay_ms(50);
+                headunit_button_double_pressed(false);
+                if (current_headunit_brand != HEADUNIT_GENERIC_RESISTIVE) {
+                    encoder_flags &= ~(ENCODER_FLAG_ENCODER_BUTTON_DOUBLE_PRESS_BM); // Clear the flag
                 }
             }
         }

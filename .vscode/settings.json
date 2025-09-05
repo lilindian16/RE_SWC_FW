@@ -6,6 +6,9 @@
         "updi_uart.h": "c",
         "stdbool.h": "c",
         "interrupt.h": "c",
-        "sleep.h": "c"
+        "sleep.h": "c",
+        "headunit_swc.h": "c",
+        "eeprom.h": "c",
+        "stdint.h": "c"
     }
 }

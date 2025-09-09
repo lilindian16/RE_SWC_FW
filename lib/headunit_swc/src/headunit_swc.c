@@ -83,6 +83,7 @@ void headunit_button_double_pressed(bool hold_output) {
             break;
         case HEADUNIT_KENWOOD:
             kenwood_on_button_double_press();
+            break;
         default:
             break;
     }

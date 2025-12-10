@@ -1,34 +1,33 @@
 # RE_SWC Firmware
 
-This repo contains the Rotary Encoder Steering Wheel Controller firmware
+This repo contains the Rotary Encoder Steering Wheel Controller firmware. FW uses the Arduino platform. Being interrupt driven, the RE_SWC is very responsive to human input via the volume knob
 
 ## Compatible Headunits
 
-The RW_SWC should be compatible with any headunit that supports learning mode/reassignment of analog steering wheel control input. The majority of android headunits support this.
+As of HW V2, the RW_SWC is compatible with:
 
-Several named brand headunits should also be compatible. Check the owner's manual of your headunit to see if it supports learning mode/reassignment of steering wheel control input.
-
-### Update - Firmware Version 2.0.0
-
-FW version 2.0.0 makes the RE_SWC compatible with (most likely) every JVC and Kenwood headunit. SWC is achieved with the blue and yellow stripe SWC input wire on the headunit.
+- Kenwood
+- JVC
+- Pioneer
+- Alpine
+- Android Headunits
+- Any headunit that supports learning SWC via KEY 1 input
 
 > [!TIP]
 > View the [Compatibility List](https://docs.google.com/spreadsheets/d/1KuhRTHHPlsPpQyRziJOaQv1jJqykjcSSAFU2pcPYcbk/edit?usp=sharing) for the most up-to-date compatibility matrix
 
 ## SWC Functions
 
-|        INPUT        | GENERIC RESISTIVE |      JVC       |   KENWOOD    |
-| :-----------------: | :---------------: | :------------: | :----------: |
-|   Volume Knob CW    |        Any        |    Volume +    |   Volume +   |
-|   Volume Knob CCW   |        Any        |    Volume -    |   Volume -   |
-| Button Short Press  |        Any        |      Mute      | Play / Pause |
-| Button Double Press |        Any        |   Next Track   |  Next Track  |
-|     Button Held     |        Any        | Previous Track |     Mute     |
+|        INPUT        | GENERIC RESISTIVE |      JVC       |    KENWOOD     |     ALPINE     |    Pioneer     |
+| :-----------------: | :---------------: | :------------: | :------------: | :------------: | :------------: |
+|   Volume Knob CW    |        Any        |    Volume +    |    Volume +    |    Volume +    |    Volume +    |
+|   Volume Knob CCW   |        Any        |    Volume -    |    Volume -    |    Volume -    |    Volume -    |
+| Button Short Press  |        Any        |      Mute      |      Mute      |      Mute      |      Mute      |
+|  Button Long Press  |        Any        |   Next Track   |   Next Track   |   Next Track   |   Next Track   |
+| Button Double Press |        Any        | Previous Track | Previous Track | Previous Track | Previous Track |
 
 ## Requirements For FW Dev & Flashing
 
 - PlatformIO - I like running it as an extension in VSCode
 - RE_SWC Controller Kit
 - USB C data & power cable
-
-The source for this project requires the Atmel megaAVR platformio core but uses only the AVR SDK functionality instead of the Arduino abstraction layer. Platformio handles all the toolchain set up. I find this much easier than using proprietary IDEs and configuring build tools etc

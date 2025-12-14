@@ -6,12 +6,11 @@ This repo contains the Rotary Encoder Steering Wheel Controller firmware. FW use
 
 As of HW V2, the RW_SWC is compatible with:
 
-- Kenwood
+- Headunits with Resistive Learning SWC (Generic Resistive)
 - JVC
-- Pioneer
+- Kenwood
 - Alpine
-- Android Headunits
-- Any headunit that supports learning SWC via KEY 1 input
+- Pioneer
 
 > [!TIP]
 > View the [Compatibility List](https://docs.google.com/spreadsheets/d/1KuhRTHHPlsPpQyRziJOaQv1jJqykjcSSAFU2pcPYcbk/edit?usp=sharing) for the most up-to-date compatibility matrix
@@ -31,3 +30,22 @@ As of HW V2, the RW_SWC is compatible with:
 - PlatformIO - I like running it as an extension in VSCode
 - RE_SWC Controller Kit
 - USB C data & power cable
+
+## Configuring Headunit Brand
+
+Headunit brand settings are stored in the (emulated) EEPROM of the chip. Users can set the brand of their headunit easily:
+
+1. Hold down the volume knob button
+2. Apply power to the RE_SWC controller via USB
+3. Keep the button held until the status LED lights up
+4. Press the volume knob button x times to enter your headunit brand (refer to the headunit brand index below). The RE_SWC status LED will blink to indicate the button has been pressed
+5. Hold the volume knob button down until the status LED lights up to set the headunit brand
+6. The RE_SWC controller will flash x times to indicate the brand it is programmed to
+
+## Headunit Brand Index
+
+1. Generic Resistive
+2. JVC
+3. Kenwood
+4. Alpine
+5. Pioneer

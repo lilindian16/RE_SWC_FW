@@ -1,8 +1,15 @@
 #include <Arduino.h>
+#include <EEPROM.h>
 #include <mcp4131.hpp>
 
-#include <generic_resistive/generic_resistive_swc.hpp>
+/* CH32 core source */
+#include <core_riscv_ch32yyxx.h>
+
+/* Include the headunit_swc header first */
 #include <headunit_swc.hpp>
+
+/* Now include all the headunit_swc headers for each brand */
+#include <generic_resistive/generic_resistive_swc.hpp>
 #include <jvc/jvc_swc.hpp>
 #include <kenwood/kenwood_swc.hpp>
 #include <alpine/alpine_swc.hpp>
@@ -35,6 +42,15 @@
 #define BUTTON_HELD_TIME_THRESHOLD_MS 500
 #define BUTTON_RELEASED_TIME_THRESHOLD_MS 1000
 
+/* EEPROM data addresses */
+#define EEPROM_ADDRESS_HEADER 0x00
+#define EEPROM_HEADER_SIZE_BYTES 4
+#define EEPROM_ADDRESS_HEADUNIT_BRAND (EEPROM_ADDRESS_HEADER + EEPROM_HEADER_SIZE_BYTES)
+#define EEPROM_HEADUNIT_BRAND_SIZE_BYTES 1
+
+/* EEPROM data */
+const uint8_t eeprom_header[] = {0xDE, 0xAD, 0xBE, 0xEF};
+
 Headunit_Brand_t headunit_brand = HEADUNIT_ALPINE;
 
 volatile int8_t encoder_count = 0;
@@ -50,8 +66,9 @@ Pioneer_SWC pioneer_swc;
 
 void encoder_rotation_interrupt_handler(void)
 {
-    // Encoder Pin A triggered the interrupt.
-    // Read Pin B to determine state change
+    /* Disable global interrupts to avoid race conditions */
+    __disable_irq();
+    /* Encoder Pin A triggered the interrupt. Read Pin B to determine state change */
     if (digitalRead(PIN_INPUT_ENCODER_B))
     {
         /* We have a CCW rotation */
@@ -59,6 +76,8 @@ void encoder_rotation_interrupt_handler(void)
         {
             encoder_count -= 1;
         }
+        /* Enable global interrupts */
+        __enable_irq();
         return;
     }
     /* We have a CW rotation */
@@ -66,13 +85,21 @@ void encoder_rotation_interrupt_handler(void)
     {
         encoder_count += 1;
     }
+    /* Enable global interrupts */
+    __enable_irq();
 }
 
 void encoder_button_interrupt_handler(void)
 {
+    /* First, disable interrupt to avoid triggering again */
     detachInterrupt(PIN_INPUT_ENCODER_SW);
+    /* Disable global interrupts to avoid race conditions */
+    __disable_irq();
+    /* Now we tell the main loop that the button has been pressed and set the initial time */
     encoder_flags |= ENCODER_FLAG_BUTTON_TIMER_STARTED_BM;
     button_press_start_time = millis();
+    /* Finally, enable global interrupts */
+    __enable_irq();
 }
 
 void on_encoder_rotation(bool cw_rotation)
@@ -193,12 +220,130 @@ void on_encoder_button_double_pressed(void)
 
 void setup()
 {
+    /* Load EEPROM */
+    EEPROM.begin();
+    uint8_t index_counter = 0; // Temp variable for for-loops
+
+    /* Check the EEPROM header on boot to check if it has been formatted */
+    uint8_t current_eeprom_header[EEPROM_HEADER_SIZE_BYTES];
+    for (index_counter = EEPROM_ADDRESS_HEADER; index_counter < EEPROM_HEADER_SIZE_BYTES; index_counter++)
+    {
+        current_eeprom_header[index_counter] = EEPROM.read(index_counter);
+    }
+
+    if (memcmp(eeprom_header, current_eeprom_header, EEPROM_HEADER_SIZE_BYTES) != 0) // Header not formatted
+    {
+        /* EEPROM is not set, we must set it up now */
+        EEPROM.write(EEPROM_ADDRESS_HEADUNIT_BRAND, (uint8_t)HEADUNIT_GENERIC_RESISTIVE);
+        /* Finally, set the EEPROM header */
+        for (index_counter = EEPROM_ADDRESS_HEADER; index_counter < EEPROM_HEADER_SIZE_BYTES; index_counter++)
+        {
+            EEPROM.write(index_counter, eeprom_header[index_counter]);
+        }
+
+        /* We can commit it to the flash storage */
+        EEPROM.commit(); // Call commit to ensure EEPROM is written to flash
+    }
+
+    else
+    {
+        headunit_brand = (Headunit_Brand_t)EEPROM.read(EEPROM_ADDRESS_HEADUNIT_BRAND);
+    }
+
     pinMode(PIN_INPUT_ENCODER_A, INPUT_PULLUP);
     pinMode(PIN_INPUT_ENCODER_B, INPUT_PULLUP);
     pinMode(PIN_INPUT_ENCODER_SW, INPUT_PULLUP);
 
     pinMode(PIN_OUTPUT_SWC_GND_EN, OUTPUT);
     digitalWrite(PIN_OUTPUT_SWC_GND_EN, LOW);
+
+    // put your setup code here, to run once:
+    pinMode(STATUS_LED_PIN, OUTPUT);
+    digitalWrite(STATUS_LED_PIN, LOW);
+
+    /* Let's see if someone wants to change the headunit brand. This is done by holding the button down on boot */
+    if (!digitalRead(PIN_INPUT_ENCODER_SW))
+    {
+        int held_time_miliseconds = 0;
+        const int button_held_threshold_ms = 3000;
+        while (!digitalRead(PIN_INPUT_ENCODER_SW) && held_time_miliseconds < button_held_threshold_ms)
+        {
+            held_time_miliseconds += 100;
+            delay(100);
+        }
+        if (held_time_miliseconds >= button_held_threshold_ms)
+        {
+            /* User has held the button, turn on the LED until they release it */
+            digitalWrite(STATUS_LED_PIN, HIGH);
+            while (!digitalRead(PIN_INPUT_ENCODER_SW))
+            {
+                delay(100);
+            }
+            digitalWrite(STATUS_LED_PIN, LOW);
+            /* Button released, now we either count presses or wait for a held input to indicate done */
+            held_time_miliseconds = 0;
+            uint8_t headunit_index = 0;
+            bool user_completed = false;
+            while (!user_completed)
+            {
+                if (!digitalRead(PIN_INPUT_ENCODER_SW))
+                {
+                    held_time_miliseconds = 0;
+                    while (!digitalRead(PIN_INPUT_ENCODER_SW) && held_time_miliseconds < button_held_threshold_ms)
+                    {
+                        held_time_miliseconds += 100;
+                        delay(100);
+                    }
+
+                    /* Button released. Decide if it was held or not */
+                    if (held_time_miliseconds >= button_held_threshold_ms)
+                    {
+                        if (headunit_index < HEADUNIT_GENERIC_RESISTIVE || headunit_index >= (uint8_t)HEADUNIT_BRAND_ERROR)
+                        {
+                            headunit_index = (uint8_t)HEADUNIT_GENERIC_RESISTIVE;
+                        }
+                        /* Button held, let's save the headunit brand and break out */
+                        EEPROM.write(EEPROM_ADDRESS_HEADUNIT_BRAND, headunit_index);
+                        EEPROM.commit();
+                        headunit_brand = (Headunit_Brand_t)headunit_index;
+                        user_completed = true;
+                        while (!digitalRead(PIN_INPUT_ENCODER_SW))
+                        {
+                            /* Flash to indicate user is done */
+                            digitalWrite(STATUS_LED_PIN, !digitalRead(STATUS_LED_PIN));
+                            delay(50);
+                        }
+                        digitalWrite(STATUS_LED_PIN, LOW);
+                        break;
+                    }
+                    else
+                    {
+                        headunit_index += 1;
+                        if (headunit_index >= (uint8_t)HEADUNIT_BRAND_ERROR)
+                        {
+                            headunit_index = (uint8_t)HEADUNIT_BRAND_ERROR;
+                        }
+                        digitalWrite(STATUS_LED_PIN, HIGH);
+                        delay(100);
+                        digitalWrite(STATUS_LED_PIN, LOW);
+                        delay(100);
+                    }
+                }
+                delay(10);
+            }
+        }
+    }
+
+    delay(1000);
+
+    /* Flash x times to show the current headunit selected */
+    for (index_counter = 0; index_counter < (uint8_t)headunit_brand; index_counter++)
+    {
+        digitalWrite(STATUS_LED_PIN, HIGH);
+        delay(250);
+        digitalWrite(STATUS_LED_PIN, LOW);
+        delay(250);
+    }
 
     if (headunit_brand == HEADUNIT_ALPINE)
     {
@@ -212,10 +357,6 @@ void setup()
         pinMode(PIN_OUPUT_SWC_PUSH_PULL, INPUT);
     }
 
-    // put your setup code here, to run once:
-    pinMode(STATUS_LED_PIN, OUTPUT);
-    digitalWrite(STATUS_LED_PIN, LOW);
-
     mcp4131.init(&SPI, SPI_CHIP_SEL_PIN);
     mcp4131.set_output_resistance(0); // Connect wiper to B-terminal
 
@@ -223,8 +364,6 @@ void setup()
     {
     case HEADUNIT_GENERIC_RESISTIVE:
         generic_resistive_swc.init_generic_resistive_swc(&mcp4131, PIN_OUTPUT_SWC_GND_EN);
-        /* Enable the test mode */
-        //  generic_resistive_swc.run_loop_test();
         break;
 
     case HEADUNIT_JVC:

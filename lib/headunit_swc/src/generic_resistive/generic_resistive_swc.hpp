@@ -27,6 +27,5 @@ public:
 private:
   int _swc_gnd_enable_pin = -1;
   Learning_Mode_State_t _current_learning_mode_state = IDLE;
-
   MCP4131 *_mcp4131;
 };

@@ -66,12 +66,12 @@ Pioneer_SWC pioneer_swc;
 
 void encoder_rotation_interrupt_handler(void)
 {
-    /* Disable global interrupts to avoid race conditions */
-    __disable_irq();
+
     /* Encoder Pin A triggered the interrupt. Read Pin B to determine state change */
     if (digitalRead(PIN_INPUT_ENCODER_B))
     {
         /* We have a CCW rotation */
+        __disable_irq();
         if (encoder_count > MIN_ENCODER_COUNT)
         {
             encoder_count -= 1;
@@ -81,6 +81,7 @@ void encoder_rotation_interrupt_handler(void)
         return;
     }
     /* We have a CW rotation */
+    __disable_irq();
     if (encoder_count < MAX_ENCODER_COUNT)
     {
         encoder_count += 1;

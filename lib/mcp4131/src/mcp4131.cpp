@@ -29,6 +29,7 @@ void MCP4131::set_output_resistance(uint32_t resistance_ohms)
     if (this->_current_resistance != value)
     {
         _update_register(VOLATILE_WIPER_0, WRITE, value);
+        this->_current_resistance = value;
     }
 }
 

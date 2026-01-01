@@ -10,20 +10,21 @@ As of HW V2, the RW_SWC is compatible with:
 - JVC
 - Kenwood
 - Alpine
-- Pioneer
+- Pioneer & Sony
+- USB HID (Android, Windows, MacOS etc)
 
 > [!TIP]
 > View the [Compatibility List](https://docs.google.com/spreadsheets/d/1KuhRTHHPlsPpQyRziJOaQv1jJqykjcSSAFU2pcPYcbk/edit?usp=sharing) for the most up-to-date compatibility matrix
 
 ## SWC Functions
 
-|        INPUT        | GENERIC RESISTIVE |      JVC       |    KENWOOD     |     ALPINE     |    Pioneer     |
-| :-----------------: | :---------------: | :------------: | :------------: | :------------: | :------------: |
-|   Volume Knob CW    |        Any        |    Volume +    |    Volume +    |    Volume +    |    Volume +    |
-|   Volume Knob CCW   |        Any        |    Volume -    |    Volume -    |    Volume -    |    Volume -    |
-| Button Short Press  |        Any        |      Mute      |      Mute      |      Mute      |      Mute      |
-|  Button Long Press  |        Any        |   Next Track   |   Next Track   |   Next Track   |   Next Track   |
-| Button Double Press |        Any        | Previous Track | Previous Track | Previous Track | Previous Track |
+|        INPUT        | GENERIC RESISTIVE |      JVC       |    KENWOOD     |     ALPINE     | Pioneer & Sony |    USB HID     |
+| :-----------------: | :---------------: | :------------: | :------------: | :------------: | :------------: | :------------: |
+|   Volume Knob CW    |        Any        |    Volume +    |    Volume +    |    Volume +    |    Volume +    |    Volume +    |
+|   Volume Knob CCW   |        Any        |    Volume -    |    Volume -    |    Volume -    |    Volume -    |    Volume -    |
+| Button Short Press  |        Any        |      Mute      |      Mute      |      Mute      |      Mute      |      Mute      |
+|  Button Long Press  |        Any        |   Next Track   |   Next Track   |   Next Track   |   Next Track   |   Next Track   |
+| Button Double Press |        Any        | Previous Track | Previous Track | Previous Track | Previous Track | Previous Track |
 
 ## Requirements For FW Dev & Flashing
 
@@ -48,4 +49,5 @@ Headunit brand settings are stored in the (emulated) EEPROM of the chip. Users c
 2. JVC
 3. Kenwood
 4. Alpine
-5. Pioneer
+5. Pioneer & Sony
+6. USB HID

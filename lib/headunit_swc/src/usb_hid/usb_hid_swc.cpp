@@ -1,11 +1,13 @@
 #include "usb_hid_swc.hpp"
 #include "ch32x035_usbfs_device.h"
 
-#define USB_VOLUME_UP_COMMAND      (1 << 5)
-#define USB_VOLUME_DOWN_COMMAND    (1 << 6)
-#define USB_PLAY_PAUSE_COMMAND     (1 << 3)
 #define USB_NEXT_TRACK_COMMAND     (1 << 0)
 #define USB_PREVIOUS_TRACK_COMMAND (1 << 1)
+#define USB_STOP_COMMAND           (1 << 2)
+#define USB_PLAY_PAUSE_COMMAND     (1 << 3)
+#define USB_MUTE_COMMAND           (1 << 4)
+#define USB_VOLUME_UP_COMMAND      (1 << 5)
+#define USB_VOLUME_DOWN_COMMAND    (1 << 6)
 
 void USB_HID_SWC::init_usb_hid_swc(void) {
   /* Usb Init */
@@ -23,7 +25,7 @@ void USB_HID_SWC::on_encoder_rotation(bool cw_rotation) {
 }
 
 void USB_HID_SWC::on_button_short_press() {
-  this->_send_keyboard_command(USB_PLAY_PAUSE_COMMAND);
+  this->_send_keyboard_command(USB_MUTE_COMMAND);
 }
 
 void USB_HID_SWC::on_button_held() {

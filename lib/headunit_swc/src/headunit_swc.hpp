@@ -2,18 +2,17 @@
 
 #include <Arduino.h>
 
-typedef enum
-{
+typedef enum {
   HEADUNIT_GENERIC_RESISTIVE = 0x01,
   HEADUNIT_JVC,
   HEADUNIT_KENWOOD,
   HEADUNIT_ALPINE,
   HEADUNIT_PIONEER,
+  HEADUNIT_USB_HID,
   HEADUNIT_BRAND_ERROR,
 } Headunit_Brand_t;
 
-class Headunit_SWC
-{
+class Headunit_SWC {
 public:
   virtual ~Headunit_SWC(void);
   virtual void on_encoder_rotation(bool cw_rotation);

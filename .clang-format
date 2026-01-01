@@ -1,0 +1,5 @@
+BasedOnStyle: LLVM
+LineEnding: LF
+AlignConsecutiveAssignments: true
+AlignConsecutiveDeclarations: true # Optional: for variable declarations
+AlignConsecutiveMacros: true

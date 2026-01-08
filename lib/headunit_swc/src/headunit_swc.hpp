@@ -7,8 +7,9 @@ typedef enum {
   HEADUNIT_JVC,
   HEADUNIT_KENWOOD,
   HEADUNIT_ALPINE,
-  HEADUNIT_PIONEER,
+  HEADUNIT_PIONEER, // Pioneer and Sony are configured the same
   HEADUNIT_USB_HID,
+  SWC_TESTING,
   HEADUNIT_BRAND_ERROR,
 } Headunit_Brand_t;
 

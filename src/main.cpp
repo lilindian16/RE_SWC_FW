@@ -14,6 +14,7 @@
 #include <jvc/jvc_swc.hpp>
 #include <kenwood/kenwood_swc.hpp>
 #include <pioneer/pioneer_swc.hpp>
+#include <testing/testing.hpp>
 #include <usb_hid/usb_hid_swc.hpp>
 
 // Encoder Pins
@@ -66,6 +67,7 @@ JVC_SWC               jvc_swc;
 Alpine_SWC            alpine_swc;
 Pioneer_SWC           pioneer_swc;
 USB_HID_SWC           usb_hid_swc;
+Testing               testing;
 
 void encoder_rotation_interrupt_handler(void) {
   /* Disable global interrupts to avoid race conditions */
@@ -157,6 +159,10 @@ void on_encoder_button_short_press(void) {
 
   case HEADUNIT_USB_HID:
     usb_hid_swc.on_button_short_press();
+    break;
+
+  case SWC_TESTING:
+    testing.on_button_short_press();
     break;
 
   default:
@@ -383,6 +389,13 @@ void setup() {
 
   case HEADUNIT_USB_HID:
     usb_hid_swc.init_usb_hid_swc();
+    break;
+
+  case SWC_TESTING:
+    testing.init_testing(&mcp4131, SPI_CHIP_SEL_PIN, PIN_OUTPUT_SWC_GND_EN,
+                         PIN_OUPUT_SWC_PUSH_PULL, &alpine_swc,
+                         &generic_resistive_swc, &jvc_swc, &kenwood_swc,
+                         &pioneer_swc, &usb_hid_swc);
     break;
 
   default:

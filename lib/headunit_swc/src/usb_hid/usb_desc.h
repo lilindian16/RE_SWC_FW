@@ -22,9 +22,12 @@
 /* File Version */
 #define DEF_FILE_VERSION 0x01
 
-/* USB Device Info */
-#define DEF_USB_VID 0x1A86
-#define DEF_USB_PID 0xFE00
+/*
+  USB Device Info
+  VID and PID from https://github.com/pidcodes/pidcodes.github.com
+ */
+#define DEF_USB_VID 0x1209
+#define DEF_USB_PID 0x6789
 
 /* USB Device Descriptor, Device Serial Number(bcdDevice) */
 #define DEF_IC_PRG_VER DEF_FILE_VERSION

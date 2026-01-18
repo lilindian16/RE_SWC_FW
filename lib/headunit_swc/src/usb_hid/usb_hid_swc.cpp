@@ -8,6 +8,7 @@
 #define USB_MUTE_COMMAND           (1 << 4)
 #define USB_VOLUME_UP_COMMAND      (1 << 5)
 #define USB_VOLUME_DOWN_COMMAND    (1 << 6)
+#define USB_NEW_PACKET_DELAY_MS    50
 
 void USB_HID_SWC::init_usb_hid_swc(void) {
   /* Usb Init */
@@ -48,4 +49,5 @@ void USB_HID_SWC::_send_keyboard_command(uint8_t command) {
     USBFS_Endp_DataUp(DEF_UEP1, this->_KB_Data_Pack,
                       sizeof(this->_KB_Data_Pack), DEF_UEP_CPY_LOAD);
   }
+  delay(USB_NEW_PACKET_DELAY_MS);
 }

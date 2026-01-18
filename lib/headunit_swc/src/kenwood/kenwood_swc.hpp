@@ -2,8 +2,7 @@
 
 #include <headunit_swc.hpp>
 
-class Kenwood_SWC : public Headunit_SWC
-{
+class Kenwood_SWC : public Headunit_SWC {
 public:
   void init_kenwood_swc(int gnd_control_pin);
   void on_encoder_rotation(bool cw_rotation);

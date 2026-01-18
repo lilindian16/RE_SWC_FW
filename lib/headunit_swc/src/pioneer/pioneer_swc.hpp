@@ -1,10 +1,9 @@
 #pragma once
 
-#include <mcp4131.hpp>
 #include "headunit_swc.hpp"
+#include <mcp4131.hpp>
 
-class Pioneer_SWC : public Headunit_SWC
-{
+class Pioneer_SWC : public Headunit_SWC {
 public:
   void init_pioneer_swc(MCP4131 *mcp4131_ptr, int swc_gnd_en_pin);
   void on_encoder_rotation(bool cw_rotation);

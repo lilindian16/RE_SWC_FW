@@ -62,7 +62,7 @@ const uint8_t MyCfgDescr[] = {
     0x00, // bInterfaceProtocol (none for HID)
     0x00, // iInterface
 
-    /* HID Descriptor (Keyboard) */
+    /* HID Descriptor */
     0x09, // bLength
     0x21, // bDescriptorType
     0x11,
@@ -73,7 +73,7 @@ const uint8_t MyCfgDescr[] = {
     0x27,
     0x00, // wDescriptorLength
 
-    /* Endpoint Descriptor (Keyboard) */
+    /* Endpoint Descriptor (Consumer Report) */
     0x07, // bLength
     0x05, // bDescriptorType
     0x81, // bEndpointAddress: IN Endpoint 1
@@ -83,7 +83,7 @@ const uint8_t MyCfgDescr[] = {
     0x0A, // bInterval: 10mS
 };
 
-/* Keyboard Report Descriptor */
+/* Consumer Report Descriptor */
 const uint8_t ConsumerRepDesc[] = {
     0x05, 0x0C, /* Usage Page (Consumer) */
     0x09, 0x01, /* Usage (Consumer Control) */

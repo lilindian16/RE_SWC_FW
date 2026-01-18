@@ -51,3 +51,17 @@ Headunit brand settings are stored in the (emulated) EEPROM of the chip. Users c
 4. Alpine
 5. Pioneer & Sony
 6. USB HID
+
+## Contributions
+
+Pull requests are more than welcome :)
+To ensure code formatting stays consistent, use the pre-commit hook before making any commits from your fork to this branch.
+
+General workflow before a pull request:
+
+1. Create a python venv in this working directory
+2. Install pre-commit package with `pip install pre-commit`
+3. (If required) install the pre-commit hook using `pre-commit install`
+4. Run pre-commit hook against all files with `pre-commit run --all-files`
+
+Pre-commit will format additional code according to the `.clang-format` file spec located in the root of this repo

@@ -1,29 +1,30 @@
 # RE_SWC Firmware
 
-This repo contains the Rotary Encoder Steering Wheel Controller firmware
+This repo contains the Rotary Encoder Steering Wheel Controller firmware. FW uses the Arduino platform. Being interrupt driven, the RE_SWC is very responsive to human input via the volume knob
 
 ## Compatible Headunits
 
-The RW_SWC should be compatible with any headunit that supports learning mode/reassignment of analog steering wheel control input. The majority of android headunits support this.
+As of HW V2, the RW_SWC is compatible with:
 
-Several named brand headunits should also be compatible. Check the owner's manual of your headunit to see if it supports learning mode/reassignment of steering wheel control input.
-
-### Update - Firmware Version 2.0.0
-
-FW version 2.0.0 makes the RE_SWC compatible with (most likely) every JVC and Kenwood headunit. SWC is achieved with the blue and yellow stripe SWC input wire on the headunit.
+- Headunits with Resistive Learning SWC (Generic Resistive)
+- JVC
+- Kenwood
+- Alpine
+- Pioneer & Sony
+- USB HID (Android, Windows, MacOS etc)
 
 > [!TIP]
 > View the [Compatibility List](https://docs.google.com/spreadsheets/d/1KuhRTHHPlsPpQyRziJOaQv1jJqykjcSSAFU2pcPYcbk/edit?usp=sharing) for the most up-to-date compatibility matrix
 
 ## SWC Functions
 
-|        INPUT        | GENERIC RESISTIVE |      JVC       |   KENWOOD    |
-| :-----------------: | :---------------: | :------------: | :----------: |
-|   Volume Knob CW    |        Any        |    Volume +    |   Volume +   |
-|   Volume Knob CCW   |        Any        |    Volume -    |   Volume -   |
-| Button Short Press  |        Any        |      Mute      | Play / Pause |
-| Button Double Press |        Any        |   Next Track   |  Next Track  |
-|     Button Held     |        Any        | Previous Track |     Mute     |
+|        INPUT        | GENERIC RESISTIVE |      JVC       |    KENWOOD     |     ALPINE     | Pioneer & Sony |    USB HID     |
+| :-----------------: | :---------------: | :------------: | :------------: | :------------: | :------------: | :------------: |
+|   Volume Knob CW    |        Any        |    Volume +    |    Volume +    |    Volume +    |    Volume +    |    Volume +    |
+|   Volume Knob CCW   |        Any        |    Volume -    |    Volume -    |    Volume -    |    Volume -    |    Volume -    |
+| Button Short Press  |        Any        |      Mute      |      Mute      |      Mute      |      Mute      |      Mute      |
+|  Button Long Press  |        Any        |   Next Track   |   Next Track   |   Next Track   |   Next Track   |   Next Track   |
+| Button Double Press |        Any        | Previous Track | Previous Track | Previous Track | Previous Track | Previous Track |
 
 ## Requirements For FW Dev & Flashing
 
@@ -31,4 +32,36 @@ FW version 2.0.0 makes the RE_SWC compatible with (most likely) every JVC and Ke
 - RE_SWC Controller Kit
 - USB C data & power cable
 
-The source for this project requires the Atmel megaAVR platformio core but uses only the AVR SDK functionality instead of the Arduino abstraction layer. Platformio handles all the toolchain set up. I find this much easier than using proprietary IDEs and configuring build tools etc
+## Configuring Headunit Brand
+
+Headunit brand settings are stored in the (emulated) EEPROM of the chip. Users can set the brand of their headunit easily:
+
+1. Hold down the volume knob button
+2. Apply power to the RE_SWC controller via USB
+3. Keep the button held until the status LED lights up
+4. Press the volume knob button x times to enter your headunit brand (refer to the headunit brand index below). The RE_SWC status LED will blink to indicate the button has been pressed
+5. Hold the volume knob button down until the status LED lights up to set the headunit brand
+6. The RE_SWC controller will flash x times to indicate the brand it is programmed to
+
+## Headunit Brand Index
+
+1. Generic Resistive
+2. JVC
+3. Kenwood
+4. Alpine
+5. Pioneer & Sony
+6. USB HID
+
+## Contributions
+
+Pull requests are more than welcome :)
+To ensure code formatting stays consistent, use the pre-commit hook before making any commits from your fork to this branch.
+
+General workflow before a pull request:
+
+1. Create a python venv in this working directory
+2. Install pre-commit package with `pip install pre-commit`
+3. (If required) install the pre-commit hook using `pre-commit install`
+4. Run pre-commit hook against all files with `pre-commit run --all-files`
+
+Pre-commit will format additional code according to the `.clang-format` file spec located in the root of this repo

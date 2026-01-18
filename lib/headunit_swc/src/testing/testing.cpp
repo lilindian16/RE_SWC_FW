@@ -19,14 +19,12 @@ void Testing::init_testing(MCP4131 *mcp4131_ptr, int mcp4131_cs_pin,
   this->_kenwood_swc           = kenwood_swc;
   this->_pioneer_swc           = pioneer_swc;
   this->_usb_hid_swc           = usb_hid_swc;
+
+  this->_mcp4131->init(&SPI, this->_mcp4131_cs_pin);
 }
 
 void Testing::on_button_short_press(void) {
   // Start the test procedure
-  this->_mcp4131->init(&SPI, this->_mcp4131_cs_pin);
-  pinMode(this->_alpine_in_out_pin, OUTPUT);
-  digitalWrite(this->_alpine_in_out_pin, LOW);
-  delay(50);
   this->_test_alpine_output();
   pinMode(this->_alpine_in_out_pin, INPUT); // Make pin floating
   delay(100);

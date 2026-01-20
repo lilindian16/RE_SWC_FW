@@ -56,9 +56,8 @@ const uint8_t eeprom_header[] = {0xDE, 0xAD, 0xBE, 0xEF};
 
 Headunit_Brand_t headunit_brand = HEADUNIT_ALPINE;
 
-volatile int8_t   encoder_count           = 0;
-volatile uint8_t  encoder_flags           = 0;
-volatile uint32_t button_press_start_time = 0;
+volatile int8_t  encoder_count = 0;
+volatile uint8_t encoder_flags = 0;
 
 MCP4131               mcp4131;
 Generic_Resistive_SWC generic_resistive_swc;
@@ -99,7 +98,6 @@ void encoder_button_interrupt_handler(void) {
   /* Now we tell the main loop that the button has been pressed and set the
    * initial time */
   encoder_flags |= ENCODER_FLAG_BUTTON_TIMER_STARTED_BM;
-  button_press_start_time = millis();
   /* Finally, enable global interrupts */
   __enable_irq();
 }
@@ -430,15 +428,13 @@ void loop() {
     }
 
     if (encoder_flags & ENCODER_FLAG_BUTTON_TIMER_STARTED_BM) {
-      uint32_t delta        = 0;
-      uint32_t current_time = millis();
-      while (delta < BUTTON_HELD_TIME_THRESHOLD_MS &&
+      uint32_t delta_time_millis = 0;
+      while (delta_time_millis < BUTTON_HELD_TIME_THRESHOLD_MS &&
              !digitalRead(PIN_INPUT_ENCODER_SW)) {
-        current_time = millis();
-        delta        = current_time - button_press_start_time;
         delay(10);
+        delta_time_millis += 10;
       }
-      if (delta >= 500) {
+      if (delta_time_millis >= 500) {
         // If we reached here, the button was held
         encoder_flags |= ENCODER_FLAG_ENCODER_BUTTON_HELD_BM;
       }
@@ -446,16 +442,13 @@ void loop() {
       else {
         // Button has been released - we now wait to see if it gets pressed
         // again
-        uint32_t start_time = millis();
-        current_time        = millis();
-        delta               = 0;
-        while (delta < BUTTON_RELEASED_TIME_THRESHOLD_MS &&
+        delta_time_millis = 0;
+        while (delta_time_millis < BUTTON_RELEASED_TIME_THRESHOLD_MS &&
                digitalRead(PIN_INPUT_ENCODER_SW)) {
-          current_time = millis();
-          delta        = current_time - start_time;
           delay(10);
+          delta_time_millis += 10;
         }
-        if (delta >= BUTTON_RELEASED_TIME_THRESHOLD_MS) {
+        if (delta_time_millis >= BUTTON_RELEASED_TIME_THRESHOLD_MS) {
           // Button was not pressed again, register single click
           encoder_flags |= ENCODER_FLAG_ENCODER_BUTTON_SINGLE_PRESS_BM;
         } else {

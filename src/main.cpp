@@ -17,18 +17,29 @@
 #include <testing/testing.hpp>
 #include <usb_hid/usb_hid_swc.hpp>
 
-// Encoder Pins
+/* Encoder Pins */
 #define PIN_INPUT_ENCODER_A  PA1
 #define PIN_INPUT_ENCODER_B  PA2
 #define PIN_INPUT_ENCODER_SW PA3
 
-// SWC Control Output
+/* SWC Control Output */
 #define PIN_OUTPUT_SWC_GND_EN   PB3
 #define PIN_OUPUT_SWC_PUSH_PULL PB11
 
 #define STATUS_LED_PIN PC15
 
 #define SPI_CHIP_SEL_PIN PA4
+
+/*
+  Unused pins:
+    - PA0
+    - PB12
+    - PC14
+    - PB0
+    - PB1
+  Default for unused pins is input floating. All unused pins are to be tied to
+  VCC or GND using internal PU or PD to reduce idle power draw.
+*/
 
 /* Encoder state flags */
 #define ENCODER_FLAG_ENCODER_BUTTON_SINGLE_PRESS_BM (1 << 0)
@@ -56,9 +67,8 @@ const uint8_t eeprom_header[] = {0xDE, 0xAD, 0xBE, 0xEF};
 
 Headunit_Brand_t headunit_brand = HEADUNIT_ALPINE;
 
-volatile int8_t   encoder_count           = 0;
-volatile uint8_t  encoder_flags           = 0;
-volatile uint32_t button_press_start_time = 0;
+volatile int8_t  encoder_count = 0;
+volatile uint8_t encoder_flags = 0;
 
 MCP4131               mcp4131;
 Generic_Resistive_SWC generic_resistive_swc;
@@ -99,7 +109,6 @@ void encoder_button_interrupt_handler(void) {
   /* Now we tell the main loop that the button has been pressed and set the
    * initial time */
   encoder_flags |= ENCODER_FLAG_BUTTON_TIMER_STARTED_BM;
-  button_press_start_time = millis();
   /* Finally, enable global interrupts */
   __enable_irq();
 }
@@ -272,9 +281,15 @@ void setup() {
   pinMode(PIN_OUTPUT_SWC_GND_EN, OUTPUT);
   digitalWrite(PIN_OUTPUT_SWC_GND_EN, LOW);
 
-  // put your setup code here, to run once:
   pinMode(STATUS_LED_PIN, OUTPUT);
   digitalWrite(STATUS_LED_PIN, LOW);
+
+  /* All unused pins tied to either VCC or GND */
+  pinMode(PA0, INPUT_PULLDOWN);
+  pinMode(PB12, INPUT_PULLDOWN);
+  pinMode(PC14, INPUT_PULLDOWN);
+  pinMode(PB0, INPUT_PULLDOWN);
+  pinMode(PB1, INPUT_PULLDOWN);
 
   /* Let's see if someone wants to change the headunit brand. This is done by
    * holding the button down on boot */
@@ -430,15 +445,13 @@ void loop() {
     }
 
     if (encoder_flags & ENCODER_FLAG_BUTTON_TIMER_STARTED_BM) {
-      uint32_t delta        = 0;
-      uint32_t current_time = millis();
-      while (delta < BUTTON_HELD_TIME_THRESHOLD_MS &&
+      uint32_t delta_time_millis = 0;
+      while (delta_time_millis < BUTTON_HELD_TIME_THRESHOLD_MS &&
              !digitalRead(PIN_INPUT_ENCODER_SW)) {
-        current_time = millis();
-        delta        = current_time - button_press_start_time;
         delay(10);
+        delta_time_millis += 10;
       }
-      if (delta >= 500) {
+      if (delta_time_millis >= 500) {
         // If we reached here, the button was held
         encoder_flags |= ENCODER_FLAG_ENCODER_BUTTON_HELD_BM;
       }
@@ -446,16 +459,13 @@ void loop() {
       else {
         // Button has been released - we now wait to see if it gets pressed
         // again
-        uint32_t start_time = millis();
-        current_time        = millis();
-        delta               = 0;
-        while (delta < BUTTON_RELEASED_TIME_THRESHOLD_MS &&
+        delta_time_millis = 0;
+        while (delta_time_millis < BUTTON_RELEASED_TIME_THRESHOLD_MS &&
                digitalRead(PIN_INPUT_ENCODER_SW)) {
-          current_time = millis();
-          delta        = current_time - start_time;
           delay(10);
+          delta_time_millis += 10;
         }
-        if (delta >= BUTTON_RELEASED_TIME_THRESHOLD_MS) {
+        if (delta_time_millis >= BUTTON_RELEASED_TIME_THRESHOLD_MS) {
           // Button was not pressed again, register single click
           encoder_flags |= ENCODER_FLAG_ENCODER_BUTTON_SINGLE_PRESS_BM;
         } else {

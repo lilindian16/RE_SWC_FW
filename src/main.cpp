@@ -17,18 +17,29 @@
 #include <testing/testing.hpp>
 #include <usb_hid/usb_hid_swc.hpp>
 
-// Encoder Pins
+/* Encoder Pins */
 #define PIN_INPUT_ENCODER_A  PA1
 #define PIN_INPUT_ENCODER_B  PA2
 #define PIN_INPUT_ENCODER_SW PA3
 
-// SWC Control Output
+/* SWC Control Output */
 #define PIN_OUTPUT_SWC_GND_EN   PB3
 #define PIN_OUPUT_SWC_PUSH_PULL PB11
 
 #define STATUS_LED_PIN PC15
 
 #define SPI_CHIP_SEL_PIN PA4
+
+/*
+  Unused pins:
+    - PA0
+    - PB12
+    - PC14
+    - PB0
+    - PB1
+  Default for unused pins is input floating. All unused pins are to be tied to
+  VCC or GND using internal PU or PD to reduce idle power draw.
+*/
 
 /* Encoder state flags */
 #define ENCODER_FLAG_ENCODER_BUTTON_SINGLE_PRESS_BM (1 << 0)
@@ -270,9 +281,15 @@ void setup() {
   pinMode(PIN_OUTPUT_SWC_GND_EN, OUTPUT);
   digitalWrite(PIN_OUTPUT_SWC_GND_EN, LOW);
 
-  // put your setup code here, to run once:
   pinMode(STATUS_LED_PIN, OUTPUT);
   digitalWrite(STATUS_LED_PIN, LOW);
+
+  /* All unused pins tied to either VCC or GND */
+  pinMode(PA0, INPUT_PULLDOWN);
+  pinMode(PB12, INPUT_PULLDOWN);
+  pinMode(PC14, INPUT_PULLDOWN);
+  pinMode(PB0, INPUT_PULLDOWN);
+  pinMode(PB1, INPUT_PULLDOWN);
 
   /* Let's see if someone wants to change the headunit brand. This is done by
    * holding the button down on boot */

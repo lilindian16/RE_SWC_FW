@@ -1,0 +1,6 @@
+v3.0.2
+    - Added separate Sony headunit and required configs
+    
+v3.0.1
+    - Improved JVC UX
+    - Set unused IO to INPUT_PULLDOWN to reduce quiescent current

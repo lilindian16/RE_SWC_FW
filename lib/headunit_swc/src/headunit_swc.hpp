@@ -4,12 +4,13 @@
 
 typedef enum {
   HEADUNIT_GENERIC_RESISTIVE = 0x01,
-  HEADUNIT_JVC,
-  HEADUNIT_KENWOOD,
-  HEADUNIT_ALPINE,
-  HEADUNIT_PIONEER, // Pioneer and Sony are configured the same
-  HEADUNIT_USB_HID,
-  SWC_TESTING,
+  HEADUNIT_JVC               = 0x02,
+  HEADUNIT_KENWOOD           = 0x03,
+  HEADUNIT_ALPINE            = 0x04,
+  HEADUNIT_PIONEER           = 0x05,
+  HEADUNIT_USB_HID           = 0x06,
+  HEADUNIT_SONY              = 0x07,
+  SWC_TESTING                = 0x08,
   HEADUNIT_BRAND_ERROR,
 } Headunit_Brand_t;
 

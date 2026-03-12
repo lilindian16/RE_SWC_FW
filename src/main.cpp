@@ -14,6 +14,7 @@
 #include <jvc/jvc_swc.hpp>
 #include <kenwood/kenwood_swc.hpp>
 #include <pioneer/pioneer_swc.hpp>
+#include <sony/sony_swc.hpp>
 #include <testing/testing.hpp>
 #include <usb_hid/usb_hid_swc.hpp>
 
@@ -78,6 +79,7 @@ Alpine_SWC            alpine_swc;
 Pioneer_SWC           pioneer_swc;
 USB_HID_SWC           usb_hid_swc;
 Testing               testing;
+Sony_SWC              sony_swc;
 
 void encoder_rotation_interrupt_handler(void) {
   /* Disable global interrupts to avoid race conditions */
@@ -139,6 +141,10 @@ void on_encoder_rotation(bool cw_rotation) {
     usb_hid_swc.on_encoder_rotation(cw_rotation);
     break;
 
+  case HEADUNIT_SONY:
+    sony_swc.on_encoder_rotation(cw_rotation);
+    break;
+
   default:
     break;
   }
@@ -168,6 +174,10 @@ void on_encoder_button_short_press(void) {
 
   case HEADUNIT_USB_HID:
     usb_hid_swc.on_button_short_press();
+    break;
+
+  case HEADUNIT_SONY:
+    sony_swc.on_button_short_press();
     break;
 
   case SWC_TESTING:
@@ -205,6 +215,10 @@ void on_encoder_button_held(void) {
     usb_hid_swc.on_button_held();
     break;
 
+  case HEADUNIT_SONY:
+    sony_swc.on_button_held();
+    break;
+
   default:
     break;
   }
@@ -234,6 +248,10 @@ void on_encoder_button_double_pressed(void) {
 
   case HEADUNIT_USB_HID:
     usb_hid_swc.on_button_double_press();
+    break;
+
+  case HEADUNIT_SONY:
+    sony_swc.on_button_double_press();
     break;
 
   default:
@@ -404,6 +422,10 @@ void setup() {
 
   case HEADUNIT_USB_HID:
     usb_hid_swc.init_usb_hid_swc();
+    break;
+
+  case HEADUNIT_SONY:
+    sony_swc.init_sony_swc(&mcp4131, PIN_OUTPUT_SWC_GND_EN);
     break;
 
   case SWC_TESTING:

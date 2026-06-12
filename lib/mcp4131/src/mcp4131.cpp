@@ -9,12 +9,17 @@
 #define TCON_R0A_BM  (1 << 2)
 #define TCON_R0HW_BM (1 << 3)
 
+#define MEMORY_ADDRESS_INDEX  12
+#define COMMAND_ADDRESS_INDEX 10
+
 void MCP4131::init(SPIClass *spi_bus_ptr, int mcp4131_cs_pin) {
   this->_spi_bus_handle = spi_bus_ptr;
   this->_cs_pin         = mcp4131_cs_pin;
   pinMode(this->_cs_pin, OUTPUT);
   digitalWrite(this->_cs_pin, HIGH);
-  this->_spi_bus_handle->begin(this->_cs_pin);
+  this->_spi_bus_handle->begin();
+  this->_spi_bus_handle->beginTransaction(
+      SPISettings(250000, MSBFIRST, SPI_MODE0));
 }
 
 void MCP4131::set_output_resistance(uint32_t resistance_ohms) {
@@ -42,16 +47,11 @@ void MCP4131::disconnect_wiper(void) {
 void MCP4131::_update_register(MCP4131_Register_Address_t address,
                                Command_t command, uint16_t value) {
   /* Mask all data fields with bit-size to ensure correct packet gen */
-  uint16_t packet = ((uint8_t)address & 0b1111) << 12;
-  packet |= ((uint8_t)command & 0b11) << 10;
+  uint16_t packet = ((uint8_t)address & 0b1111) << MEMORY_ADDRESS_INDEX;
+  packet |= ((uint8_t)command & 0b11) << COMMAND_ADDRESS_INDEX;
   packet |= (value & 0b111111111);
 
-  this->_spi_bus_handle->beginTransaction(
-      SPISettings(250000, MSBFIRST, SPI_MODE0));
   digitalWrite(this->_cs_pin, LOW);
-  delayMicroseconds(1);
-  this->_spi_bus_handle->transfer16(address);
-  this->_spi_bus_handle->transfer16(value);
-  this->_spi_bus_handle->endTransaction();
+  this->_spi_bus_handle->transfer16(packet);
   digitalWrite(this->_cs_pin, HIGH);
 }

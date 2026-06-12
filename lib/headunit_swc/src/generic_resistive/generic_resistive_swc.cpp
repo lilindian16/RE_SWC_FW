@@ -3,8 +3,9 @@
 #include <Arduino.h>
 #include <mcp4131.hpp>
 
-#define OUTPUT_DELAY_NOT_HELD_MS 80
-#define OUTPUT_DELAY_HELD        4000
+#define OUTPUT_DELAY_NOT_HELD_MS    80
+#define OUTPUT_DELAY_HELD           4000
+#define OUTPUT_DELAY_BETWEEN_FRAMES 20
 
 #define VOLUME_UP_RESISTANCE_OHMS      1000
 #define VOLUME_DOWN_RESISTANCE_OHMS    2000
@@ -44,6 +45,7 @@ void Generic_Resistive_SWC::on_encoder_rotation(bool clockwise_rotation) {
     delay(OUTPUT_DELAY_NOT_HELD_MS);
   }
   digitalWrite(this->_swc_gnd_enable_pin, LOW);
+  delay(OUTPUT_DELAY_BETWEEN_FRAMES);
 }
 
 void Generic_Resistive_SWC::on_button_short_press(void) {
@@ -57,6 +59,7 @@ void Generic_Resistive_SWC::on_button_short_press(void) {
     delay(OUTPUT_DELAY_NOT_HELD_MS);
   }
   digitalWrite(this->_swc_gnd_enable_pin, LOW);
+  delay(OUTPUT_DELAY_BETWEEN_FRAMES);
 }
 
 void Generic_Resistive_SWC::on_button_double_press(void) {
@@ -78,6 +81,7 @@ void Generic_Resistive_SWC::on_button_held(void) {
     delay(OUTPUT_DELAY_NOT_HELD_MS);
   }
   digitalWrite(this->_swc_gnd_enable_pin, LOW);
+  delay(OUTPUT_DELAY_BETWEEN_FRAMES);
 }
 
 Learning_Mode_State_t Generic_Resistive_SWC::get_learning_mode_state(void) {

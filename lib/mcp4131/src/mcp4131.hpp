@@ -29,6 +29,7 @@ class MCP4131 {
 public:
   void init(SPIClass *spi_bus_ptr, int mcp4131_cs_pin);
   void set_output_resistance(uint32_t resistance_ohms);
+  void set_output_ladder_value(uint8_t value);
   void connect_wiper(void);
   void disconnect_wiper(void);
 

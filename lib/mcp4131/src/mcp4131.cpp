@@ -34,6 +34,13 @@ void MCP4131::set_output_resistance(uint32_t resistance_ohms) {
   }
 }
 
+void MCP4131::set_output_ladder_value(uint8_t value) {
+  if (this->_current_resistance != value) {
+    _update_register(VOLATILE_WIPER_0, WRITE, value);
+    this->_current_resistance = value;
+  }
+}
+
 void MCP4131::connect_wiper(void) {
   this->_tcon_register_value |= TCON_R0W_BM;
   this->_update_register(VOLATILE_TCON_REGISTER, WRITE, _tcon_register_value);

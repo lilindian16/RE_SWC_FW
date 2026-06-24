@@ -1,23 +1,72 @@
 /********************************** (C) COPYRIGHT
- * ******************************* File Name          : ch32x035_usb.h Author
- *          : WCH Version            : V1.0.0 Date               : 2024/08/02
+ * ******************************* File Name          : ch32x035_usbfs_device.h
+ * Author             : WCH
+ * Version            : V1.0.0
+ * Date               : 2024/04/16
  * Description        : This file contains all the functions prototypes for the
- * USB firmware library.
+ *                      USBFS firmware library.
  *********************************************************************************
  * Copyright (c) 2021 Nanjing Qinheng Microelectronics Co., Ltd.
  * Attention: This software (modified or not) and binary are used for
  * microcontroller manufactured by Nanjing Qinheng Microelectronics.
+ *
+ * Modified by Jaime Sequeira for use with Car Stereo Volume Knob Kit
  *******************************************************************************/
-#ifndef __CH32X035_USB_H
-#define __CH32X035_USB_H
+
+#ifndef __CH32X035_USBD_H_
+#define __CH32X035_USBD_H_
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/*******************************************************************************/
-/* Header File */
+#include "debug.h"
+#include "stdbool.h"
 #include "stdint.h"
+#include "string.h"
+
+/******************************************************************************/
+/* Global Define */
+#ifndef __PACKED
+#define __PACKED __attribute__((packed))
+#endif
+
+/* end-point number */
+#define DEF_UEP_IN  0x80
+#define DEF_UEP_OUT 0x00
+#define DEF_UEP0    0x00
+#define DEF_UEP1    0x01
+#define DEF_UEP2    0x02
+#define DEF_UEP3    0x03
+#define DEF_UEP4    0x04
+#define DEF_UEP5    0x05
+#define DEF_UEP6    0x06
+#define DEF_UEP7    0x07
+#define DEF_UEP_NUM 8
+
+#define USBFSD_UEP_RX_EN   0x08
+#define USBFSD_UEP_TX_EN   0x04
+#define USBFSD_UEP_BUF_MOD 0x01
+#define DEF_UEP_DMA_LOAD                                                       \
+  0 /* Direct the DMA address to the data to be processed */
+#define DEF_UEP_CPY_LOAD 1 /* Use memcpy to move data to a buffer */
+
+/* Setup Request Packets */
+#define pUSBFS_SetupReqPak ((PUSB_SETUP_REQ)USBFS_EP0_4Buf)
+
+#define USB_IOEN        0x00000080
+#define USB_PHY_V33     0x00000040
+#define UDP_PUE_MASK    0x0000000C
+#define UDP_PUE_DISABLE 0x00000000
+#define UDP_PUE_35UA    0x00000004
+#define UDP_PUE_10K     0x00000008
+#define UDP_PUE_1K5     0x0000000C
+
+#define UDM_PUE_MASK    0x00000003
+#define UDM_PUE_DISABLE 0x00000000
+#define UDM_PUE_35UA    0x00000001
+#define UDM_PUE_10K     0x00000002
+#define UDM_PUE_1K5     0x00000003
 
 /*******************************************************************************/
 /* USB Communication Related Macro Definition */
@@ -161,16 +210,6 @@ extern "C" {
 #define HUB_C_PORT_SUSPEND      18
 #define HUB_C_PORT_OVER_CURRENT 19
 #define HUB_C_PORT_RESET        20
-#endif
-
-/* USB HID Class Request Code */
-#ifndef HID_GET_REPORT
-#define HID_GET_REPORT   0x01
-#define HID_GET_IDLE     0x02
-#define HID_GET_PROTOCOL 0x03
-#define HID_SET_REPORT   0x09
-#define HID_SET_IDLE     0x0A
-#define HID_SET_PROTOCOL 0x0B
 #endif
 
 /* USB UDisk */
@@ -572,8 +611,59 @@ typedef struct __attribute__((packed)) _UDISK_BOC_CSW {
   uint8_t  mCSW_Status;
 } UDISK_BOC_CSW, *PXUDISK_BOC_CSW;
 
+typedef struct {
+  const uint8_t *device_descriptor;
+  const uint8_t *config_descriptor;
+  const uint8_t *language_descriptor;
+  const uint8_t *manufacturer_descriptor;
+  const uint8_t *prod_info_descriptor;
+  const uint8_t *serial_num_info_descriptor;
+  const uint8_t *consumer_report_descriptor;
+  uint16_t       consumer_report_descriptor_length;
+} Descriptor_Configs_t;
+
+typedef enum {
+  USB_DEVICE_MODE_BOOTLOADER,
+  USB_DEVICE_MODE_HID,
+} USB_Device_Mode_t;
+
+/*******************************************************************************/
+/* Variable Definition */
+/* Global */
+extern const uint8_t *pUSBFS_Descr;
+
+/* Setup Request */
+extern volatile uint8_t  USBFS_SetupReqCode;
+extern volatile uint8_t  USBFS_SetupReqType;
+extern volatile uint16_t USBFS_SetupReqValue;
+extern volatile uint16_t USBFS_SetupReqIndex;
+extern volatile uint16_t USBFS_SetupReqLen;
+
+/* USB Device Status */
+extern volatile uint8_t USBFS_DevConfig;
+extern volatile uint8_t USBFS_DevAddr;
+extern volatile uint8_t USBFS_DevSleepStatus;
+extern volatile uint8_t USBFS_DevEnumStatus;
+
+/* USB IN Endpoint Busy Flag */
+extern volatile uint8_t USBFS_Endp_Busy[];
+
+void    USBFS_Device_Init(FunctionalState       sta,
+                          Descriptor_Configs_t *descriptor_config,
+                          USB_Device_Mode_t     device_mode);
+void    USBFS_Device_Endp_Init(void);
+void    USBFS_RCC_Init(void);
+void    USBFS_Sleep_Wakeup_Operate(void);
+void    USB_Sleep_Wakeup_CFG(void);
+uint8_t USBFS_Endp_DataUp(uint8_t endp, uint8_t *pbuf, uint16_t len,
+                          uint8_t mod);
+bool    is_endpoint_rx_pending(uint8_t endpoint);
+uint8_t get_endpoint_rx_message(uint8_t endpoint, uint8_t *buffer,
+                                size_t buffer_length);
+bool    is_endpoint_tx_pending(uint8_t endpoint);
+
 #ifdef __cplusplus
 }
 #endif
 
-#endif /*__CH32X035_USB_H */
+#endif //__CH32X035_USBD_H_

@@ -3,63 +3,36 @@
 #include <Arduino.h>
 #include <mcp4131.hpp>
 
-#define OUTPUT_DELAY_NOT_HELD_MS    80
-#define OUTPUT_DELAY_HELD           4000
-#define OUTPUT_DELAY_BETWEEN_FRAMES 20
+#define OUTPUT_DELAY_NOT_HELD_mS       80
+#define OUTPUT_DELAY_LEARNING_MODE_mS  4000
+#define OUTPUT_DELAY_BETWEEN_FRAMES_mS 20
 
-#define VOLUME_UP_RESISTANCE_OHMS      1000
-#define VOLUME_DOWN_RESISTANCE_OHMS    2000
-#define MUTE_RESISTANCE_OHMS           4000
-#define NEXT_TRACK_RESISTANCE_OHMS     6000
-#define PREVIOUS_TRACK_RESISTANCE_OHMS 8000
+void Generic_Resistive_SWC::init_generic_resistive_swc(
+    MCP4131 *mcp4131_ptr, int swc_gnd_en_pin, Output_Mapping_t *mapping) {
 
-#define BUTTON_SHORT_PRESS_RESISTANCE_OHMS NEXT_TRACK_RESISTANCE_OHMS
-#define BUTTON_HELD_RESISTANCE_OHMS        PREVIOUS_TRACK_RESISTANCE_OHMS
-
-void Generic_Resistive_SWC::init_generic_resistive_swc(MCP4131 *mcp4131_ptr,
-                                                       int swc_gnd_en_pin) {
-  if (mcp4131_ptr) {
-    this->_mcp4131 = mcp4131_ptr;
-    this->_mcp4131->set_output_resistance(0x00);
-    this->_swc_gnd_enable_pin = swc_gnd_en_pin;
-    pinMode(this->_swc_gnd_enable_pin, OUTPUT);
-    digitalWrite(this->_swc_gnd_enable_pin, LOW);
-  } else {
-    while (1) {
-      ;
-    }
-  }
+  this->_mcp4131 = mcp4131_ptr;
+  this->_mcp4131->set_output_resistance(0x00);
+  this->_swc_gnd_enable_pin = swc_gnd_en_pin;
+  pinMode(this->_swc_gnd_enable_pin, OUTPUT);
+  digitalWrite(this->_swc_gnd_enable_pin, LOW);
+  this->output_mapping = mapping;
 }
 
 void Generic_Resistive_SWC::on_encoder_rotation(bool clockwise_rotation) {
-  uint32_t required_resistance = (clockwise_rotation)
-                                     ? VOLUME_UP_RESISTANCE_OHMS
-                                     : VOLUME_DOWN_RESISTANCE_OHMS;
-  this->_mcp4131->set_output_resistance(required_resistance);
-  digitalWrite(this->_swc_gnd_enable_pin, HIGH);
-  if (this->_current_learning_mode_state == WAITING) {
-    delay(OUTPUT_DELAY_HELD);
-    this->_current_learning_mode_state = COMPLETE;
-  } else {
-
-    delay(OUTPUT_DELAY_NOT_HELD_MS);
-  }
-  digitalWrite(this->_swc_gnd_enable_pin, LOW);
-  delay(OUTPUT_DELAY_BETWEEN_FRAMES);
+  this->generic_resistive_output_swc(
+      (clockwise_rotation)
+          ? this->output_mapping->cw_rotate_resistance_output
+          : this->output_mapping->ccw_rotate_resistance_output);
 }
 
 void Generic_Resistive_SWC::on_button_short_press(void) {
-  uint32_t required_resistance = BUTTON_SHORT_PRESS_RESISTANCE_OHMS;
-  this->_mcp4131->set_output_resistance(required_resistance);
-  digitalWrite(this->_swc_gnd_enable_pin, HIGH);
-  if (this->_current_learning_mode_state == WAITING) {
-    delay(OUTPUT_DELAY_HELD);
-    this->_current_learning_mode_state = COMPLETE;
-  } else {
-    delay(OUTPUT_DELAY_NOT_HELD_MS);
-  }
-  digitalWrite(this->_swc_gnd_enable_pin, LOW);
-  delay(OUTPUT_DELAY_BETWEEN_FRAMES);
+  this->generic_resistive_output_swc(
+      this->output_mapping->button_short_press_resistance_output);
+}
+
+void Generic_Resistive_SWC::on_button_held(void) {
+  this->generic_resistive_output_swc(
+      this->output_mapping->button_long_press_resistance_output);
 }
 
 void Generic_Resistive_SWC::on_button_double_press(void) {
@@ -70,33 +43,20 @@ void Generic_Resistive_SWC::on_learning_mode_completed(void) {
   this->_current_learning_mode_state = IDLE;
 }
 
-void Generic_Resistive_SWC::on_button_held(void) {
-  uint32_t required_resistance = BUTTON_HELD_RESISTANCE_OHMS;
-  this->_mcp4131->set_output_resistance(required_resistance);
-  digitalWrite(this->_swc_gnd_enable_pin, HIGH);
-  if (this->_current_learning_mode_state == WAITING) {
-    delay(OUTPUT_DELAY_HELD);
-    this->_current_learning_mode_state = COMPLETE;
-  } else {
-    delay(OUTPUT_DELAY_NOT_HELD_MS);
-  }
-  digitalWrite(this->_swc_gnd_enable_pin, LOW);
-  delay(OUTPUT_DELAY_BETWEEN_FRAMES);
-}
-
 Learning_Mode_State_t Generic_Resistive_SWC::get_learning_mode_state(void) {
   return (this->_current_learning_mode_state);
 }
 
-void Generic_Resistive_SWC::run_loop_test(void) {
-  while (true) {
-    uint32_t required_resistances[] = {0, 3500, 8000, 11250, 16000, 24000};
-    for (uint8_t i = 0;
-         i < sizeof(required_resistances) / sizeof(required_resistances[0]);
-         i++) {
-      this->_mcp4131->set_output_resistance(required_resistances[i]);
-      digitalWrite(this->_swc_gnd_enable_pin, HIGH);
-      delay(10000);
-    }
+void Generic_Resistive_SWC::generic_resistive_output_swc(
+    uint8_t ladder_output_value) {
+  this->_mcp4131->set_output_resistance(ladder_output_value);
+  digitalWrite(this->_swc_gnd_enable_pin, HIGH);
+  if (this->_current_learning_mode_state == WAITING) {
+    delay(OUTPUT_DELAY_LEARNING_MODE_mS);
+    this->_current_learning_mode_state = COMPLETE;
+  } else {
+    delay(this->output_mapping->resistance_output_hold_delay_time_units * 10);
   }
+  digitalWrite(this->_swc_gnd_enable_pin, LOW);
+  delay(this->output_mapping->resistance_output_off_delay_time_units * 10);
 }

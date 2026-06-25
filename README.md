@@ -2,6 +2,27 @@
 
 This repo contains the Rotary Encoder Steering Wheel Controller firmware. FW uses the Arduino platform. Being interrupt driven, the RE_SWC is very responsive to human input via the volume knob
 
+## Revision History
+
+### v4.0.0
+
+- User output mapping supported via secondary (config) bootloader
+- Improved responsiveness of Generic Resistive output
+
+### v3.0.3
+
+- Fixed and updated the MCP4131 driver
+- Added delay to Gen Res output turn off. This allows forces a gap between Gen Res output change
+
+### v3.0.2
+
+- Added separate Sony headunit and required configs
+
+### v3.0.1
+
+- Improved JVC UX
+- Set unused IO to INPUT_PULLDOWN to reduce quiescent current
+
 ## Compatible Headunits
 
 As of HW V2, the RW_SWC is compatible with:
@@ -17,23 +38,34 @@ As of HW V2, the RW_SWC is compatible with:
 > [!TIP]
 > View the [Compatibility List](https://docs.google.com/spreadsheets/d/1KuhRTHHPlsPpQyRziJOaQv1jJqykjcSSAFU2pcPYcbk/edit?usp=sharing) for the most up-to-date compatibility matrix
 
-## SWC Functions
+## Default Output Mapping
 
-|        INPUT        |  GENERIC RESISTIVE  |      JVC       |    KENWOOD     |     ALPINE     |    Pioneer     |    USB HID     |      SONY      |
-| :-----------------: | :-----------------: | :------------: | :------------: | :------------: | :------------: | :------------: | :------------: |
-|   Volume Knob CW    |         Any         |    Volume +    |    Volume +    |    Volume +    |    Volume +    |    Volume +    |    Volume +    |
-|   Volume Knob CCW   |         Any         |    Volume -    |    Volume -    |    Volume -    |    Volume -    |    Volume -    |    Volume -    |
-| Button Short Press  |         Any         |      Mute      |      Mute      |      Mute      |      Mute      |      Mute      |      Mute      |
-|  Button Long Press  |         Any         |   Next Track   |   Next Track   |   Next Track   |   Next Track   |   Next Track   |   Next Track   |
-| Button Double Press | Enter Learning Mode | Previous Track | Previous Track | Previous Track | Previous Track | Previous Track | Previous Track |
+|                    INPUT                     |        OUTPUT        |
+| :------------------------------------------: | :------------------: |
+|     Volume Knob Clockwise Rotation (CW)      |       Volume+        |
+| Volume Knob Counter Clockwise Rotation (CCW) |       Volume-        |
+|              Button Short Press              |       Mute/ATT       |
+|              Button Long Press               |      Next Track      |
+|   Button Double Press (Generic Resistive)    | Enable Learning Mode |
+|         Button Double Press (Others)         |    Previous Track    |
 
-## Requirements For FW Dev & Flashing
+## Output Function Support
 
-- PlatformIO - I like running it as an extension in VSCode
-- RE_SWC Controller Kit
-- USB C data & power cable
+_FW v_4.0.0_
+
+|     OUTPUT     |        JVC         |      KENWOOD       |       ALPINE       |      PIONEER       |      USB HID       |        SONY        |
+| :------------: | :----------------: | :----------------: | :----------------: | :----------------: | :----------------: | :----------------: |
+|    Volume+     | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
+|    Volume-     | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
+|    Mute/ATT    | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
+|   Next Track   | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
+| Previous Track | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
+|   Play/Pause   |        :x:         | :heavy_check_mark: |        :x:         |        :x:         | :heavy_check_mark: |        :x:         |
+| Change Source  |        :x:         |        :x:         |        :x:         | :heavy_check_mark: |        :x:         |        :x:         |
 
 ## Configuring Headunit Brand
+
+### Standalone method
 
 Headunit brand settings are stored in the (emulated) EEPROM of the chip. Users can set the brand of their headunit easily:
 
@@ -44,7 +76,9 @@ Headunit brand settings are stored in the (emulated) EEPROM of the chip. Users c
 5. Hold the volume knob button down until the status LED lights up to set the headunit brand
 6. The RE_SWC controller will flash x times to indicate the brand it is programmed to
 
-## Headunit Brand Index
+When using this method to set the headunit brand, the default output mapping will be used
+
+### Headunit Brand Index
 
 1. Generic Resistive
 2. JVC
@@ -54,9 +88,15 @@ Headunit brand settings are stored in the (emulated) EEPROM of the chip. Users c
 6. USB HID
 7. Sony
 
+## Requirements For FW Dev & Flashing
+
+- PlatformIO - I like running it as an extension in VSCode
+- RE_SWC Controller Kit
+- USB C data & power cable
+
 ## Contributions
 
-Pull requests are more than welcome :)
+Pull requests are more than welcome!
 To ensure code formatting stays consistent, use the pre-commit hook before making any commits from your fork to this branch.
 
 General workflow before a pull request:

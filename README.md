@@ -51,9 +51,9 @@ As of HW V2, the RW_SWC is compatible with:
 
 ## Output Function Support
 
-FW v_4.0.0
+_FW v_4.0.0_
 
-|     OUTPUT     |        JVC         |      KENWOOD       |       ALPINE       |      Pioneer       |      USB HID       |        SONY        |
+|     OUTPUT     |        JVC         |      KENWOOD       |       ALPINE       |      PIONEER       |      USB HID       |        SONY        |
 | :------------: | :----------------: | :----------------: | :----------------: | :----------------: | :----------------: | :----------------: |
 |    Volume+     | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
 |    Volume-     | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
@@ -78,7 +78,7 @@ Headunit brand settings are stored in the (emulated) EEPROM of the chip. Users c
 
 When using this method to set the headunit brand, the default output mapping will be used
 
-## Headunit Brand Index
+### Headunit Brand Index
 
 1. Generic Resistive
 2. JVC

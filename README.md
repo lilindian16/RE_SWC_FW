@@ -4,6 +4,10 @@ This repo contains the Rotary Encoder Steering Wheel Controller firmware. FW use
 
 ## Revision History
 
+### v4.0.1
+
+- Fixed error with Gen Res implementation. Corrected function call to use 8-bit resistor ladder value instead of resistance value (uint32_t)
+
 ### v4.0.0
 
 - User output mapping supported via secondary (config) bootloader

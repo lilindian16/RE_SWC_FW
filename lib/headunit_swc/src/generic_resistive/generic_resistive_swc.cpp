@@ -49,7 +49,7 @@ Learning_Mode_State_t Generic_Resistive_SWC::get_learning_mode_state(void) {
 
 void Generic_Resistive_SWC::generic_resistive_output_swc(
     uint8_t ladder_output_value) {
-  this->_mcp4131->set_output_resistance(ladder_output_value);
+  this->_mcp4131->set_output_ladder_value(ladder_output_value);
   digitalWrite(this->_swc_gnd_enable_pin, HIGH);
   if (this->_current_learning_mode_state == WAITING) {
     delay(OUTPUT_DELAY_LEARNING_MODE_mS);

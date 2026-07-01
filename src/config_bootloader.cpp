@@ -106,8 +106,36 @@ const uint8_t MyManuInfo[] = {
 };
 
 /* Product Information */
-const uint8_t MyProdInfo[] = {0x0E, 0x03, 'R', 0,   'E', 0,   '_',
-                              0,    'S',  0,   'W', 0,   'C', 0};
+const uint8_t MyProdInfo[] = {0x3C, /* Size in bytes */ 0x03,
+                              'R',  0,
+                              'E',  0,
+                              '_',  0,
+                              'S',  0,
+                              'W',  0,
+                              'C',  0,
+                              ' ',  0,
+                              'b',  0,
+                              'y',  0,
+                              ' ',  0,
+                              'P',  0,
+                              'o',  0,
+                              'u',  0,
+                              'n',  0,
+                              'a',  0,
+                              'm',  0,
+                              'u',  0,
+                              ' ',  0,
+                              'E',  0,
+                              'l',  0,
+                              'e',  0,
+                              'c',  0,
+                              't',  0,
+                              'r',  0,
+                              'o',  0,
+                              'n',  0,
+                              'i',  0,
+                              'c',  0,
+                              's',  0};
 
 Descriptor_Configs_t usb_bootloader_descriptors = {
     .device_descriptor       = MyDevDescr,

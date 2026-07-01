@@ -264,12 +264,18 @@ void USB_HID_SWC::usb_hid_output_swc(Volume_Knob_Input_t input) {
     uint8_t report[2] = {0x01 /* Report ID = 1 */, consumer_report_mask};
     if (USBFS_DevEnumStatus) {
       USBFS_Endp_DataUp(DEF_UEP1, report, sizeof(report), DEF_UEP_CPY_LOAD);
-      int count = 0; /* Wait for max 10ms till we change the report */
-      while (is_endpoint_tx_pending(DEF_UEP1) && count < 10) {
+      int count = 0; /* Wait for max 100ms till we change the report */
+      while (is_endpoint_tx_pending(DEF_UEP1) && count < 100) {
+        count += 1;
         delay(1);
       }
       report[1] = 0x00; // Reset key press list to nothing
+      count     = 0;
       USBFS_Endp_DataUp(DEF_UEP1, report, sizeof(report), DEF_UEP_CPY_LOAD);
+      while (is_endpoint_tx_pending(DEF_UEP1) && count < 100) {
+        count += 1;
+        delay(1);
+      }
     }
     delay(USB_NEW_PACKET_DELAY_MS);
   }

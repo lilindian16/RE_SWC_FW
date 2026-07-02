@@ -482,18 +482,17 @@ void setup() {
           delay(1000);
         }
       }
+      for (index_counter = 0;
+           index_counter <
+           (uint8_t)output_mapping.headunit_brand; // Use 1 flash as index 0
+           index_counter++) {
+        digitalWrite(STATUS_LED_PIN, HIGH);
+        delay(250);
+        digitalWrite(STATUS_LED_PIN, LOW);
+        delay(250);
+      }
       NVIC_SystemReset();
     }
-  }
-
-  for (index_counter = 0;
-       index_counter <
-       (uint8_t)output_mapping.headunit_brand; // Use 1 flash as index 0
-       index_counter++) {
-    digitalWrite(STATUS_LED_PIN, HIGH);
-    delay(250);
-    digitalWrite(STATUS_LED_PIN, LOW);
-    delay(250);
   }
 
   if (output_mapping.headunit_brand == HEADUNIT_ALPINE) {

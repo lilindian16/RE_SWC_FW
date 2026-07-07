@@ -305,6 +305,5 @@ void USB_HID_SWC::usb_hid_output_swc(Volume_Knob_Input_t input) {
         delay(1);
       }
     }
-    delay(USB_NEW_PACKET_DELAY_MS);
   }
 }
